@@ -1,5 +1,7 @@
 # Pulso · App de entrenamiento personal (PWA)
 
+**App publicada:** https://pulso-gym-two.vercel.app (cada push a `main` se despliega solo en Vercel).
+
 App web progresiva, instalable en el móvil y usable sin conexión, pensada para entrenar con una **mano zamba radial congénita en el brazo izquierdo**. Tiene tres módulos:
 
 1. **Gimnasio** (principal): rutina de cuerpo completo; todo el tren superior se hace **solo con el brazo derecho** y nada carga la mano o la muñeca izquierda.
