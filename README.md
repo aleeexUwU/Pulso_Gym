@@ -1,6 +1,6 @@
 # vl3x-GYM · App de entrenamiento personal (PWA)
 
-**App publicada:** https://pulso-gym-two.vercel.app (cada push a `main` se despliega solo en Vercel).
+**App publicada:** https://vl3x-gym.vercel.app (cada push a `main` se despliega solo en Vercel).
 
 App web progresiva, instalable en el móvil y usable sin conexión, pensada para entrenar con una **mano zamba radial congénita en el brazo izquierdo**. Tiene tres módulos:
 
