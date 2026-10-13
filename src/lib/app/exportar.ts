@@ -44,8 +44,16 @@ export async function importarJSON(archivo: File): Promise<number> {
 
 const nombre = (id: string) => getEjercicio(id)?.nombre ?? id;
 
-export async function exportarCSV(tipo: "gimnasio" | "abdominales" | "brazo" | "peso"): Promise<void> {
+export async function exportarCSV(tipo: "gimnasio" | "abdominales" | "brazo" | "peso" | "dieta"): Promise<void> {
   const d = db();
+  if (tipo === "dieta") {
+    const cs = vivos(await d.comidas.orderBy("fecha").toArray());
+    const filas: (string | number | null)[][] = [["fecha", "hora", "tipo", "alimento", "gramos", "kcal", "proteinas_g", "carbohidratos_g", "grasas_g", "fibra_g", "azucares_g", "sal_g", "fuente"]];
+    for (const c of cs)
+      for (const i of c.items)
+        filas.push([c.fecha, c.hora, c.tipo, i.nombre, i.gramos, i.kcal, i.proteinas, i.carbohidratos, i.grasas, i.fibra, i.azucares, i.sal, c.fuente]);
+    return descargar(`pulso-dieta-${hoyISO()}.csv`, csv(filas), "text/csv");
+  }
   if (tipo === "gimnasio") {
     const ws = vivos(await d.workouts.orderBy("fecha").toArray());
     const filas: (string | number | null | boolean)[][] = [["fecha", "sesion", "estado", "ejercicio", "serie", "peso_kg", "reps", "rir", "hecha", "descarga"]];

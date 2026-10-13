@@ -278,6 +278,7 @@ function Progreso() {
           <Button variant="outline" className="h-11 rounded-xl" onClick={() => exportarCSV("gimnasio")}>CSV gimnasio</Button>
           <Button variant="outline" className="h-11 rounded-xl" onClick={() => exportarCSV("abdominales")}>CSV core</Button>
           <Button variant="outline" className="h-11 rounded-xl" onClick={() => exportarCSV("peso")}>CSV peso</Button>
+          <Button variant="outline" className="h-11 rounded-xl" onClick={() => exportarCSV("dieta")}>CSV dieta</Button>
           {ajustes.moduloBrazo && <Button variant="outline" className="h-11 rounded-xl" onClick={() => exportarCSV("brazo")}>CSV brazo</Button>}
           <Button className="col-span-2 h-11 rounded-xl" onClick={() => exportarJSON()}>Copia completa (JSON)</Button>
         </div>

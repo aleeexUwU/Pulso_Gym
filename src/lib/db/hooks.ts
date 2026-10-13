@@ -6,7 +6,7 @@ import { ajustesPorDefecto } from "@/lib/domain/defaults";
 import type { Settings } from "@/lib/domain/types";
 import { db } from "./db";
 import { leerKv, vivos, type ClaveKv, type ValoresKv } from "./repo";
-import type { AbsSession, ArmExercise, ArmSession, BodyWeight, ExerciseNote, Workout } from "./types";
+import type { AbsSession, ArmExercise, ArmSession, BodyWeight, Comida, ExerciseNote, Workout } from "./types";
 
 /** undefined = cargando · null = no existe. */
 export function useKv<K extends ClaveKv>(clave: K): ValoresKv[K] | null | undefined {
@@ -23,7 +23,9 @@ export function useAjustes(): Settings | undefined {
   return useMemo(() => {
     if (a === undefined) return undefined;
     const base = ajustesPorDefecto();
-    return a ? { ...base, ...a, incrementos: { ...base.incrementos, ...a.incrementos } } : base;
+    return a
+      ? { ...base, ...a, incrementos: { ...base.incrementos, ...a.incrementos }, dieta: { ...base.dieta, ...a.dieta } }
+      : base;
   }, [a]);
 }
 
@@ -53,6 +55,10 @@ export function useArmSessions(): ArmSession[] | undefined {
 
 export function useBodyweights(): BodyWeight[] | undefined {
   return useLiveQuery(async () => vivos(await db().bodyweights.orderBy("fecha").toArray()), []);
+}
+
+export function useComidas(): Comida[] | undefined {
+  return useLiveQuery(async () => vivos(await db().comidas.orderBy("fecha").toArray()), []);
 }
 
 export function useNota(exerciseId: string): ExerciseNote | null | undefined {

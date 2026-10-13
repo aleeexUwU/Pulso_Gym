@@ -4,6 +4,7 @@ import type {
   ArmExercise,
   ArmSession,
   BodyWeight,
+  Comida,
   ExerciseNote,
   KvRow,
   MediaRow,
@@ -20,6 +21,7 @@ export class GymDB extends Dexie {
   armSessions!: Table<ArmSession, string>;
   bodyweights!: Table<BodyWeight, string>;
   notas!: Table<ExerciseNote, string>;
+  comidas!: Table<Comida, string>;
   media!: Table<MediaRow, string>;
 
   constructor() {
@@ -34,11 +36,13 @@ export class GymDB extends Dexie {
       notas: "id, updatedAt, _dirty",
       media: "id",
     });
+    // v2: módulo de dieta.
+    this.version(2).stores({ comidas: "id, fecha, updatedAt, _dirty" });
   }
 }
 
 /** Tablas que se sincronizan con Supabase (todas salvo media). */
-export const COLECCIONES = ["kv", "workouts", "absSessions", "armExercises", "armSessions", "bodyweights", "notas"] as const;
+export const COLECCIONES = ["kv", "workouts", "absSessions", "armExercises", "armSessions", "bodyweights", "notas", "comidas"] as const;
 export type Coleccion = (typeof COLECCIONES)[number];
 
 let instancia: GymDB | null = null;

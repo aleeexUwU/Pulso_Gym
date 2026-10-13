@@ -1,4 +1,5 @@
 import type { EstadoProgresion } from "@/lib/domain/progression";
+import type { ItemComida } from "@/lib/domain/nutrition/parser";
 import type { Measure } from "@/lib/domain/types";
 
 /** Metadatos de sincronización que llevan todos los registros. */
@@ -110,6 +111,20 @@ export interface BodyWeight extends SyncMeta {
 /** Nota persistente por ejercicio (id = exerciseId). */
 export interface ExerciseNote extends SyncMeta {
   texto: string;
+}
+
+export type TipoComida = "desayuno" | "almuerzo" | "comida" | "merienda" | "cena" | "otro";
+
+export interface Comida extends SyncMeta {
+  fecha: string;
+  hora: string;
+  tipo: TipoComida;
+  descripcion: string;
+  items: ItemComida[];
+  fuente: "texto" | "ia-texto" | "ia-foto" | "manual";
+  notasIA?: string;
+  /** Foto guardada solo en este dispositivo (tabla media). */
+  fotoMediaId?: string;
 }
 
 /** Ficheros locales (vídeos propios). No se sincronizan. */

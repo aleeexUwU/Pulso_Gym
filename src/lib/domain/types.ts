@@ -1,3 +1,5 @@
+import type { AjustesDieta } from "./nutrition/objetivos";
+
 // Tipos del dominio. Todo lo de este directorio es lógica pura (sin React ni IndexedDB)
 // para poder probarlo con Vitest.
 
@@ -155,6 +157,7 @@ export interface Settings {
   /** Días de la semana del módulo brazo izquierdo (solo si está activado). */
   diasBrazo: Weekday[];
   tema: "oscuro" | "claro" | "sistema";
+  dieta: AjustesDieta;
 }
 
 export interface PlannedExercise {

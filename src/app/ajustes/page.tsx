@@ -21,6 +21,7 @@ import { escribirKv } from "@/lib/db/repo";
 import { NOMBRE_DIA_CORTO, SEMANA_LUNES } from "@/lib/domain/dates";
 import { getEjercicio } from "@/lib/domain/exercises";
 import { LIMITACIONES } from "@/lib/domain/limitations";
+import { objetivosDiarios, type AjustesDieta } from "@/lib/domain/nutrition/objetivos";
 import { EQUIPO_NOMBRE } from "@/lib/domain/muscles";
 import type { Equipment, Experience, Goal, Profile, Settings, Sex, Weekday } from "@/lib/domain/types";
 
@@ -224,6 +225,47 @@ export default function Ajustes() {
         <Fila titulo="Material en casa">
           <Chips<Equipment> multiple valor={ajustes.equipoCasa} onChange={(v) => ajustesYRegenerar({ equipoCasa: v as Equipment[] })} opciones={[{ valor: "esterilla", etiqueta: "Esterilla" }, { valor: "banda_elastica", etiqueta: "Banda elástica" }]} />
         </Fila>
+      </Glass>
+
+      <Glass className="space-y-4">
+        <SectionTitle>Dieta</SectionTitle>
+        <Fila titulo="Objetivo" ayuda="«Automático» sigue tu objetivo de entreno: ganar músculo → ligero superávit; salud → mantener.">
+          <Chips<AjustesDieta["objetivo"]>
+            valor={ajustes.dieta.objetivo}
+            onChange={(v) => guardarAjustes({ dieta: { ...ajustes.dieta, objetivo: v as AjustesDieta["objetivo"] } })}
+            opciones={[
+              { valor: "auto", etiqueta: "Automático" },
+              { valor: "ganar", etiqueta: "Ganar músculo" },
+              { valor: "mantener", etiqueta: "Mantener" },
+              { valor: "perder", etiqueta: "Perder grasa" },
+            ]}
+          />
+        </Fila>
+        <div className="grid grid-cols-2 gap-3">
+          {(
+            [
+              ["kcalManual", "Kcal fijas (opcional)"],
+              ["proteinaManual", "Proteína fija, g (opcional)"],
+            ] as const
+          ).map(([k, t]) => (
+            <div key={k}>
+              <Label htmlFor={`d-${k}`} className="text-xs">{t}</Label>
+              <Input
+                id={`d-${k}`}
+                type="number"
+                inputMode="numeric"
+                placeholder="auto"
+                defaultValue={ajustes.dieta[k] ?? ""}
+                onBlur={(e) => guardarAjustes({ dieta: { ...ajustes.dieta, [k]: e.target.value === "" ? null : Number(e.target.value) } })}
+                className="mt-1 h-11 rounded-xl text-center"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Hoy: {objetivosDiarios(perfil, ajustes.dieta).kcal} kcal y {objetivosDiarios(perfil, ajustes.dieta).proteinas} g de proteína (calculado con
+          tu peso, altura, edad y días de entreno).
+        </p>
       </Glass>
 
       <Glass>

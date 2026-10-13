@@ -1,6 +1,7 @@
 import { inicioSemana, hoyISO } from "./dates";
 import { LIMITACIONES_POR_DEFECTO } from "./limitations";
 import { EQUIPO_GIMNASIO_COMPLETO } from "./muscles";
+import { AJUSTES_DIETA_POR_DEFECTO } from "./nutrition/objetivos";
 import { INCREMENTOS_POR_DEFECTO } from "./progression";
 import type { Profile, Settings } from "./types";
 
@@ -44,5 +45,6 @@ export function ajustesPorDefecto(hoy = hoyISO()): Settings {
     equipoCasa: ["esterilla"],
     diasBrazo: [],
     tema: "oscuro",
+    dieta: { ...AJUSTES_DIETA_POR_DEFECTO },
   };
 }

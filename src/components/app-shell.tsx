@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Dumbbell, Hand, LineChart, Settings, WifiOff } from "lucide-react";
+import { Activity, Apple, Dumbbell, Hand, LineChart, Settings, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ function useOnline() {
   );
 }
 
-const SIN_NAV = ["/bienvenida", "/gimnasio/sesion", "/abdominales/sesion", "/brazo/sesion"];
+const SIN_NAV = ["/bienvenida", "/gimnasio/sesion", "/abdominales/sesion", "/brazo/sesion", "/dieta/nueva"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
@@ -45,6 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ...(ajustes?.moduloBrazo
       ? [{ href: "/brazo/", label: "Brazo izq.", icon: Hand, activo: ruta.startsWith("/brazo") }]
       : []),
+    { href: "/dieta/", label: "Dieta", icon: Apple, activo: ruta.startsWith("/dieta") },
     { href: "/progreso/", label: "Progreso", icon: LineChart, activo: ruta.startsWith("/progreso") },
     { href: "/ajustes/", label: "Ajustes", icon: Settings, activo: ruta.startsWith("/ajustes") },
   ];
