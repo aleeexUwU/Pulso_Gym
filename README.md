@@ -10,18 +10,27 @@ App web progresiva, instalable en el móvil y usable sin conexión, pensada para
 
 ## Cómo ejecutarla
 
-Requisitos: Node 20+ (probado con Node 24).
+Requisitos: Node 20+ (probado con Node 24). Todos los comandos se lanzan **dentro de la carpeta `gym`**.
 
-```bash
+En **PowerShell** (Windows):
+
+```powershell
+cd gym
 npm install
-npm run dev        # desarrollo en http://localhost:3000 (sin service worker)
-npm test           # tests unitarios (Vitest)
+npm run dev                                      # desarrollo en http://localhost:3000 (sin service worker)
+npm test                                         # tests unitarios (Vitest)
 npm run lint
-npm run build      # exportación estática en out/ + service worker
-npm run preview    # sirve out/ en http://localhost:4173 como en producción (con PWA y offline)
+npm run build; if ($?) { npm run preview }       # build + servir out/ en http://localhost:4173 (PWA y offline)
 ```
 
-Si `npm install` falla con `EALLOWSCRIPTS` (por un `allow-scripts` en tu `~/.npmrc` global), ejecútalo así: `NPM_CONFIG_USERCONFIG=/dev/null npm install` (en PowerShell: `$env:NPM_CONFIG_USERCONFIG='NUL'; npm install`).
+Windows PowerShell 5.1 no admite `&&`; por eso se usa `; if ($?) { ... }`. En bash o PowerShell 7 vale `npm run build && npm run preview`.
+
+Si `npm install` falla con `EALLOWSCRIPTS` (por un `allow-scripts` en tu `~/.npmrc` global):
+
+```powershell
+$env:NPM_CONFIG_USERCONFIG = 'NUL'
+npm install
+```
 
 Sin Supabase configurado la app funciona en **modo local** (IndexedDB en el dispositivo). Para sincronizar, copia `.env.example` a `.env.local` y rellena las dos variables.
 
