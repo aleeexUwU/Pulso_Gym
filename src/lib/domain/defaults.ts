@@ -41,5 +41,8 @@ export function ajustesPorDefecto(hoy = hoyISO()): Settings {
     sonido: true,
     vibracion: true,
     biseries: true,
+    equipoCasa: ["esterilla"],
+    diasBrazo: [],
+    tema: "oscuro",
   };
 }

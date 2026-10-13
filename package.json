@@ -1,12 +1,17 @@
 {
-  "name": "gym",
+  "name": "pulso-gym",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "build": "next build && node scripts/build-sw.mjs",
+    "preview": "node scripts/servir.mjs",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "imagenes": "node scripts/descargar-imagenes.mjs",
+    "iconos": "node scripts/generar-iconos.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

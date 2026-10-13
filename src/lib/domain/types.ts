@@ -150,6 +150,11 @@ export interface Settings {
   sonido: boolean;
   vibracion: boolean;
   biseries: boolean;
+  /** Material que tienes en casa para el core (esterilla, banda...). */
+  equipoCasa: Equipment[];
+  /** Días de la semana del módulo brazo izquierdo (solo si está activado). */
+  diasBrazo: Weekday[];
+  tema: "oscuro" | "claro" | "sistema";
 }
 
 export interface PlannedExercise {

@@ -1,69 +1,340 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { motion } from "framer-motion";
+import {
+  AlertTriangle,
+  ArrowRightLeft,
+  BatteryLow,
+  BookOpen,
+  ChevronDown,
+  Clock,
+  Info,
+  Play,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { CoverageBars } from "@/components/coverage-bars";
+import { ExerciseImage } from "@/components/exercise/exercise-image";
+import { TecnicaSheet } from "@/components/exercise/technique";
+import { SustituirDialog } from "@/components/gym/sustituir-dialog";
+import { Button } from "@/components/ui/button";
+import { Aviso, Cargando, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
+import { WeekStrip } from "@/components/week-strip";
+import { enDescarga, iniciarWorkout, logsDeWorkouts, semanaPrograma } from "@/lib/app/gimnasio";
+import {
+  entradaGenerador,
+  guardarAjustes,
+  marcarDolorEnPlan,
+  regenerarPlan,
+  sustituirEnPlanGuardado,
+} from "@/lib/app/planificacion";
+import { clavesHechas } from "@/lib/app/resumen";
+import { useAbsSessions, useAjustes, useArmSessions, useEvaluacionBrazo, usePerfil, usePlan, useWorkouts } from "@/lib/db/hooks";
+import { diaSemana, hoyISO, inicioSemana, NOMBRE_DIA, sumarDias } from "@/lib/domain/dates";
+import { ejercicio } from "@/lib/domain/exercises";
+import { evaluarDescarga } from "@/lib/domain/progression";
+import type { PlanDay } from "@/lib/domain/types";
+import { planSemanal } from "@/lib/domain/weekly-plan";
+import { cn } from "@/lib/utils";
+
+export default function Gimnasio() {
+  const router = useRouter();
+  const perfil = usePerfil();
+  const ajustes = useAjustes();
+  const plan = usePlan();
+  const ev = useEvaluacionBrazo();
+  const workouts = useWorkouts();
+  const abs = useAbsSessions();
+  const brazo = useArmSessions();
+  const [tecnica, setTecnica] = useState<string | null>(null);
+  const [sustituir, setSustituir] = useState<{ id: string; dia: PlanDay } | null>(null);
+  const [abierto, setAbierto] = useState<string | null>(null);
+
+  const hoy = hoyISO();
+  const lunes = inicioSemana(hoy);
+  const casa = useMemo(
+    () => (perfil && ajustes ? entradaGenerador(perfil, ajustes, ev).coberturaCasa : undefined),
+    [perfil, ajustes, ev],
+  );
+
+  if (!perfil || !ajustes || plan === undefined || !workouts) return <Cargando />;
+
+  if (!plan) {
+    return (
+      <div className="space-y-4">
+        <PageHeader titulo="Gimnasio" />
+        <Aviso>Aún no hay rutina generada.</Aviso>
+        <Button className="h-14 w-full rounded-2xl" onClick={() => regenerarPlan()}>
+          Generar rutina
+        </Button>
+      </div>
+    );
+  }
+
+  const semanas = semanaPrograma(ajustes, hoy);
+  const descargaActiva = enDescarga(ajustes, hoy);
+  const descarga = evaluarDescarga(hoy, ajustes, logsDeWorkouts(workouts));
+  const actividades = planSemanal(lunes, plan, ajustes, ajustes.diasBrazo);
+  const hechas = clavesHechas(workouts, abs, brazo);
+  const diaHoy = plan.dias.find((d) => d.diaSemana === diaSemana(hoy));
+  const enCurso = workouts.find((w) => w.estado === "en_curso");
+  const proximo = diaHoy ?? siguienteDia(plan.dias, hoy);
+  const hechoHoy = hechas.has(`${hoy}|gimnasio`);
+
+  async function empezar(dia: PlanDay) {
+    const id = await iniciarWorkout(dia, perfil!, ajustes!);
+    router.push(`/gimnasio/sesion/?id=${id}`);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-5">
+      <PageHeader
+        titulo="Gimnasio"
+        subtitulo={
+          <>
+            {perfil.nombre ? `Hola, ${perfil.nombre} · ` : ""}Semana {semanas + 1}
+            {semanas === 0 && " · calibración"}
+          </>
+        }
+        accion={
+          <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
+            <Link href="/ejercicios/">
+              <BookOpen />
+            </Link>
+          </Button>
+        }
+      />
+
+      <WeekStrip desde={lunes} actividades={actividades} hechas={hechas} />
+
+      {enCurso && (
+        <Glass className="neon-border">
+          <p className="text-sm text-muted-foreground">Sesión en curso</p>
+          <p className="font-heading text-lg font-semibold">{enCurso.nombre}</p>
+          <Button asChild className="mt-3 h-14 w-full rounded-2xl text-base font-semibold">
+            <Link href={`/gimnasio/sesion/?id=${enCurso.id}`}>
+              <Play /> Continuar
+            </Link>
+          </Button>
+        </Glass>
+      )}
+
+      {!enCurso && proximo && (
+        <Glass className={cn(diaHoy && !hechoHoy && "neon-border")}>
+          <p className="text-sm text-muted-foreground">
+            {diaHoy ? (hechoHoy ? "Hoy · ¡hecho! 💪" : "Hoy toca") : `Próximo: ${NOMBRE_DIA[proximo.diaSemana]}`}
           </p>
+          <p className="font-heading text-xl font-semibold">{proximo.nombre}</p>
+          <p className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+            <span>{proximo.ejercicios.length} ejercicios</span>
+            <span className="flex items-center gap-1">
+              <Clock className="size-3.5" /> ~{proximo.duracionEstimadaMin} min
+            </span>
+          </p>
+          <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" onClick={() => empezar(proximo)}>
+            <Play /> {diaHoy ? "Empezar sesión" : "Entrenar este día ahora"}
+          </Button>
+        </Glass>
+      )}
+
+      {descargaActiva && (
+        <Aviso tipo="info">
+          <div className="flex gap-2">
+            <BatteryLow className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p>
+              <strong>Semana de descarga</strong> hasta el {ajustes.descargaHasta}: mitad de series, 90 % del peso y más reps
+              en reserva.
+            </p>
+          </div>
+        </Aviso>
+      )}
+      {!descargaActiva && descarga.sugerir && (
+        <Aviso tipo="warn">
+          <div className="flex gap-2">
+            <BatteryLow className="mt-0.5 size-4 shrink-0 text-warn" />
+            <div className="space-y-2">
+              <p>{descarga.motivo}</p>
+              <div className="flex gap-2">
+                <Button
+                  size="lg"
+                  className="rounded-xl"
+                  onClick={async () => {
+                    await guardarAjustes({ descargaHasta: sumarDias(hoy, 6), ultimaDescarga: hoy });
+                    toast.success("Semana de descarga activada");
+                  }}
+                >
+                  Empezar descarga
+                </Button>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="rounded-xl"
+                  onClick={() => guardarAjustes({ ultimaDescarga: sumarDias(hoy, -7 * (ajustes.semanasDescarga - 1)) })}
+                >
+                  En una semana
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Aviso>
+      )}
+
+      {plan.avisos.length > 0 && (
+        <div className="space-y-2">
+          {plan.avisos.map((a) => (
+            <Aviso key={a} tipo={a.includes("último recurso") || a.includes("Sin volumen") ? "warn" : "info"}>
+              <div className="flex gap-2">
+                <Info className="mt-0.5 size-4 shrink-0" />
+                <p>{a}</p>
+              </div>
+            </Aviso>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      )}
+
+      <section>
+        <SectionTitle
+          accion={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={async () => {
+                await regenerarPlan();
+                toast.success("Rutina regenerada. El historial se mantiene.");
+              }}
+            >
+              <RefreshCw /> Regenerar
+            </Button>
+          }
+        >
+          Tu rutina
+        </SectionTitle>
+        <div className="space-y-3">
+          {plan.dias.map((d) => {
+            const open = abierto === d.id;
+            return (
+              <Glass key={d.id} className="p-0">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                  aria-expanded={open}
+                  onClick={() => setAbierto(open ? null : d.id)}
+                >
+                  <span>
+                    <span className="block text-xs uppercase tracking-wider text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
+                    <span className="block font-heading font-semibold">{d.nombre}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {d.ejercicios.length} ejercicios · {d.ejercicios.reduce((t, e) => t + e.series, 0)} series · ~
+                      {d.duracionEstimadaMin} min
+                    </span>
+                  </span>
+                  <ChevronDown className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")} />
+                </button>
+                {open && (
+                  <motion.ol initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 px-3 pb-3">
+                    {d.ejercicios.map((pe, i) => {
+                      const e = ejercicio(pe.exerciseId);
+                      return (
+                        <li key={pe.exerciseId} className="rounded-2xl bg-secondary/50 p-2">
+                          <div className="flex gap-3">
+                            <button type="button" onClick={() => setTecnica(e.id)} aria-label={`Ver técnica de ${e.nombre}`}>
+                              <ExerciseImage ejercicio={e} animar={false} className="size-16 shrink-0" />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium leading-tight">
+                                <span className="text-muted-foreground">{i + 1}. </span>
+                                {e.nombre}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {pe.series} × {pe.repsMin}–{pe.repsMax}
+                                {e.medida === "segundos" ? " s" : " reps"} · descanso {pe.descansoSeg}s · RIR {pe.rir}
+                              </p>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {pe.biserie && (
+                                  <span className="rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-semibold text-violet">
+                                    Biserie {pe.biserie}
+                                  </span>
+                                )}
+                                {pe.ultimoRecurso && (
+                                  <span className="flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-[10px] font-semibold text-warn">
+                                    <AlertTriangle className="size-3" /> Último recurso
+                                    {pe.alternativaPreferida && ` · mejor: ${ejercicio(pe.alternativaPreferida).nombre}`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2 grid grid-cols-3 gap-1.5">
+                            <Button variant="ghost" size="sm" className="h-9 rounded-xl" onClick={() => setTecnica(e.id)}>
+                              <BookOpen /> Técnica
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 rounded-xl"
+                              onClick={() => setSustituir({ id: e.id, dia: d })}
+                            >
+                              <ArrowRightLeft /> Cambiar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 rounded-xl text-destructive"
+                              onClick={async () => {
+                                const alt = await marcarDolorEnPlan(e.id);
+                                toast.warning(
+                                  alt
+                                    ? `${e.nombre} marcado con molestia. Sustituido por ${ejercicio(alt).nombre}.`
+                                    : `${e.nombre} marcado con molestia y retirado.`,
+                                );
+                              }}
+                            >
+                              <ShieldAlert /> Me duele
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </motion.ol>
+                )}
+              </Glass>
+            );
+          })}
         </div>
-      </main>
+      </section>
+
+      <Glass>
+        <SectionTitle>Cobertura muscular semanal</SectionTitle>
+        <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} />
+      </Glass>
+
+      <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
+      <SustituirDialog
+        exerciseId={sustituir?.id ?? null}
+        perfil={perfil}
+        ocupados={sustituir?.dia.ejercicios.map((x) => x.exerciseId) ?? []}
+        onClose={() => setSustituir(null)}
+        onElegir={async (nuevo) => {
+          const de = sustituir!.id;
+          setSustituir(null);
+          await sustituirEnPlanGuardado(de, nuevo);
+          toast.success(`Cambiado por ${ejercicio(nuevo).nombre}`);
+        }}
+      />
     </div>
   );
+}
+
+function siguienteDia(dias: PlanDay[], hoy: string): PlanDay | undefined {
+  for (let i = 1; i <= 7; i++) {
+    const wd = diaSemana(sumarDias(hoy, i));
+    const d = dias.find((x) => x.diaSemana === wd);
+    if (d) return d;
+  }
+  return dias[0];
 }

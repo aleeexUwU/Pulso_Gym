@@ -1,0 +1,568 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  BookOpen,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Minus,
+  NotebookPen,
+  Pencil,
+  Plus,
+  ShieldAlert,
+  Trophy,
+} from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { ExerciseImage } from "@/components/exercise/exercise-image";
+import { NotaEjercicio, TecnicaSheet } from "@/components/exercise/technique";
+import { SustituirDialog } from "@/components/gym/sustituir-dialog";
+import { RestTimer, type Descanso } from "@/components/rest-timer";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Aviso, Cargando, Chips, Glass, Stat, Stepper } from "@/components/ui-kit";
+import { completarWorkout, logsDeWorkouts, mutarWorkout, sustituirEnWorkout } from "@/lib/app/gimnasio";
+import { marcarDolorEnPlan } from "@/lib/app/planificacion";
+import { useAjustes, usePerfil, useWorkout, useWorkouts } from "@/lib/db/hooks";
+import type { Workout, WorkoutExercise, WorkoutSet } from "@/lib/db/types";
+import { ejercicio } from "@/lib/domain/exercises";
+import { incrementoPara, mejorE1rm, redondearPeso, type EstadoProgresion } from "@/lib/domain/progression";
+import type { LoadType } from "@/lib/domain/types";
+import { cn } from "@/lib/utils";
+
+const ESTADO: Record<EstadoProgresion, { texto: string; clase: string }> = {
+  calibracion: { texto: "Calibración", clase: "bg-violet/15 text-violet" },
+  subir: { texto: "¡Sube peso!", clase: "bg-lime/15 text-lime" },
+  mantener: { texto: "Mantén y suma reps", clase: "bg-primary/15 text-primary" },
+  bajar: { texto: "Baja un poco", clase: "bg-warn/15 text-warn" },
+  descarga: { texto: "Descarga", clase: "bg-secondary text-foreground" },
+};
+
+const PASO_STEPPER: Record<LoadType, number> = {
+  mancuerna: 1,
+  maquina: 2.5,
+  polea: 2.5,
+  smith: 2.5,
+  kettlebell: 2,
+  peso_corporal: 1,
+  banda: 1,
+};
+
+function pendientes(ej: WorkoutExercise) {
+  return ej.series.filter((s) => !s.hecho).length;
+}
+
+function usarWakeLock() {
+  useEffect(() => {
+    type WL = { release: () => Promise<void> };
+    let lock: WL | null = null;
+    const pedir = async () => {
+      try {
+        const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<WL> } };
+        lock = (await nav.wakeLock?.request("screen")) ?? null;
+      } catch {
+        /* sin permiso */
+      }
+    };
+    void pedir();
+    const vis = () => document.visibilityState === "visible" && void pedir();
+    document.addEventListener("visibilitychange", vis);
+    return () => {
+      document.removeEventListener("visibilitychange", vis);
+      void lock?.release();
+    };
+  }, []);
+}
+
+function Sesion() {
+  const params = useSearchParams();
+  const id = params.get("id");
+  const workout = useWorkout(id);
+  const todos = useWorkouts();
+  const perfil = usePerfil();
+  const ajustes = useAjustes();
+  const [idx, setIdx] = useState<number | null>(null);
+  const [editando, setEditando] = useState<number | null>(null);
+  const [borrador, setBorrador] = useState<Pick<WorkoutSet, "pesoKg" | "reps" | "rir">>({ pesoKg: null, reps: null, rir: null });
+  const [descanso, setDescanso] = useState<Descanso | null>(null);
+  const [destino, setDestino] = useState<number | null>(null);
+  const [tecnica, setTecnica] = useState<string | null>(null);
+  const [sustituir, setSustituir] = useState(false);
+  const [verNotas, setVerNotas] = useState(false);
+  usarWakeLock();
+
+  // Ejercicio inicial: el primero con series pendientes.
+  useEffect(() => {
+    if (!workout || idx !== null) return;
+    const i = workout.ejercicios.findIndex((e) => pendientes(e) > 0);
+    setIdx(i >= 0 ? i : 0);
+  }, [workout, idx]);
+
+  const ej = workout && idx !== null ? workout.ejercicios[idx] : undefined;
+  const serieActiva = editando ?? (ej ? ej.series.findIndex((s) => !s.hecho) : -1);
+
+  // Cargar el borrador de la serie activa (objetivo o lo ya anotado).
+  useEffect(() => {
+    if (!ej || serieActiva < 0) return;
+    const s = ej.series[serieActiva];
+    if (!s) return;
+    setBorrador({
+      pesoKg: s.hecho ? s.pesoKg : s.pesoKg ?? s.objetivoPeso,
+      reps: s.hecho ? s.reps : s.reps ?? s.objetivoReps,
+      rir: s.rir,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ej?.exerciseId, serieActiva, idx]);
+
+  const finDescanso = useCallback(() => {
+    setDescanso(null);
+    if (destino !== null) {
+      setIdx(destino);
+      setEditando(null);
+      setDestino(null);
+    }
+  }, [destino]);
+
+  const previos = useMemo(
+    () => logsDeWorkouts((todos ?? []).filter((w) => w.id !== id && w.estado === "completado")),
+    [todos, id],
+  );
+
+  if (!id) return <Aviso>Sesión no encontrada.</Aviso>;
+  if (workout === undefined || !perfil || !ajustes || idx === null) return <Cargando />;
+  if (workout === null) return <Aviso>Sesión no encontrada.</Aviso>;
+  if (workout.estado === "completado") return <Resumen workout={workout} previos={previos} />;
+  if (!ej) return <Cargando />;
+
+  const e = ejercicio(ej.exerciseId);
+  const total = workout.ejercicios.reduce((t, x) => t + x.series.length, 0);
+  const hechas = workout.ejercicios.reduce((t, x) => t + x.series.filter((s) => s.hecho).length, 0);
+  const paso = PASO_STEPPER[e.tipoCarga];
+  const conPeso = e.cargaInicial != null;
+  const pareja = ej.biserie
+    ? workout.ejercicios.findIndex((x, i) => i !== idx && x.biserie === ej.biserie)
+    : -1;
+
+  async function serieHecha() {
+    if (!workout || idx === null || serieActiva < 0) return;
+    const s = serieActiva;
+    const yaEstaba = ej!.series[s].hecho;
+    const incr = incrementoPara(e.tipoCarga, ajustes!.incrementos);
+    let siguiente: Workout | null = null;
+    await mutarWorkout(workout.id, (w) => {
+      const x = w.ejercicios[idx];
+      x.series[s] = { ...x.series[s], ...borrador, hecho: true, hora: new Date().toISOString() };
+      // Llevar el peso usado a las series siguientes que aún no se han tocado.
+      for (let k = s + 1; k < x.series.length; k++) {
+        const sig = x.series[k];
+        if (sig.hecho || borrador.pesoKg == null) continue;
+        if (x.estado === "calibracion") {
+          const rir = borrador.rir;
+          const usado = borrador.pesoKg;
+          sig.pesoKg = redondearPeso(rir == null ? Math.max(sig.objetivoPeso ?? 0, usado) : rir >= 4 ? usado + incr : rir >= 2 ? usado : usado - incr);
+        } else if (sig.pesoKg === sig.objetivoPeso) {
+          sig.pesoKg = borrador.pesoKg;
+        }
+      }
+      siguiente = w;
+    });
+    setEditando(null);
+    if (yaEstaba || !siguiente) return;
+    const w = siguiente as Workout;
+    const actual = w.ejercicios[idx];
+    const quedanAqui = pendientes(actual) > 0;
+    const p = pareja >= 0 ? w.ejercicios[pareja] : null;
+    const quedaPareja = p ? pendientes(p) > 0 : false;
+    const hechasAqui = actual.series.filter((x) => x.hecho).length;
+    const hechasPareja = p ? p.series.filter((x) => x.hecho).length : 0;
+
+    if (quedaPareja && hechasPareja < hechasAqui) {
+      setDestino(pareja);
+      setDescanso({ hasta: Date.now() + 15_000, total: 15, etiqueta: `Biserie: cambia a ${ejercicio(p!.exerciseId).nombre}` });
+      return;
+    }
+    const descansoSeg = p ? Math.max(actual.descansoSeg, p.descansoSeg) : actual.descansoSeg;
+    if (quedanAqui) {
+      if (p && pareja < idx && quedaPareja) setDestino(pareja);
+      setDescanso({ hasta: Date.now() + descansoSeg * 1000, total: descansoSeg, etiqueta: "Descanso" });
+      return;
+    }
+    const sig = w.ejercicios.findIndex((x, i) => i !== idx && pendientes(x) > 0 && (i > idx || x.biserie === actual.biserie));
+    const otro = sig >= 0 ? sig : w.ejercicios.findIndex((x) => pendientes(x) > 0);
+    if (otro < 0) {
+      toast.success("¡Todas las series hechas! Pulsa Terminar.");
+      return;
+    }
+    setDestino(otro);
+    setDescanso({
+      hasta: Date.now() + descansoSeg * 1000,
+      total: descansoSeg,
+      etiqueta: `Siguiente: ${ejercicio(w.ejercicios[otro].exerciseId).nombre}`,
+    });
+  }
+
+  async function cambiarSeries(delta: 1 | -1) {
+    await mutarWorkout(workout!.id, (w) => {
+      const x = w.ejercicios[idx!];
+      if (delta === 1) {
+        const ultima = x.series[x.series.length - 1];
+        x.series.push({ ...ultima, reps: null, rir: null, hecho: false, hora: undefined, pesoKg: ultima.pesoKg });
+      } else {
+        const i = x.series.map((s) => s.hecho).lastIndexOf(false);
+        if (i >= 0 && x.series.length > 1) x.series.splice(i, 1);
+      }
+    });
+  }
+
+  async function meDuele() {
+    const alt = await marcarDolorEnPlan(e.id);
+    if (alt) {
+      await sustituirEnWorkout(workout!.id, idx!, alt, perfil!, ajustes!);
+      toast.warning(`Marcado con molestia. Cambiado por ${ejercicio(alt).nombre}.`);
+    } else {
+      await mutarWorkout(workout!.id, (w) => void w.ejercicios.splice(idx!, 1));
+      setIdx(Math.max(0, idx! - 1));
+      toast.warning("Marcado con molestia y retirado de la sesión.");
+    }
+  }
+
+  async function terminar() {
+    await completarWorkout(workout!.id);
+    toast.success("Sesión guardada");
+  }
+
+  return (
+    <div className="space-y-4 pb-28">
+      {/* Cabecera */}
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="icon-lg" className="rounded-2xl" aria-label="Volver">
+          <Link href="/">
+            <ArrowLeft />
+          </Link>
+        </Button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs text-muted-foreground">{workout.nombre}</p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--neon)] to-[var(--violet)] transition-[width]"
+              style={{ width: `${(hechas / Math.max(1, total)) * 100}%` }}
+            />
+          </div>
+        </div>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {hechas}/{total}
+        </span>
+        <Button variant="outline" className="h-10 rounded-2xl" onClick={terminar}>
+          <Flag /> Terminar
+        </Button>
+      </div>
+
+      {/* Puntos de ejercicios */}
+      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Ejercicios de la sesión">
+        {workout.ejercicios.map((x, i) => (
+          <button
+            key={`${x.exerciseId}-${i}`}
+            type="button"
+            role="tab"
+            aria-selected={i === idx}
+            aria-label={`${i + 1}. ${ejercicio(x.exerciseId).nombre}`}
+            onClick={() => {
+              setIdx(i);
+              setEditando(null);
+            }}
+            className={cn(
+              "h-2.5 min-w-6 flex-1 rounded-full transition-colors",
+              i === idx ? "bg-primary" : pendientes(x) === 0 ? "bg-lime/70" : "bg-secondary",
+            )}
+          />
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${ej.exerciseId}-${idx}`}
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -30 }}
+          transition={{ duration: 0.18 }}
+          className="space-y-4"
+        >
+          <Glass className="space-y-3">
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setTecnica(e.id)} aria-label="Ver técnica">
+                <ExerciseImage ejercicio={e} className="size-24 shrink-0" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground">
+                  Ejercicio {idx + 1} de {workout.ejercicios.length}
+                  {ej.biserie && <span className="ml-1 font-semibold text-violet">· Biserie {ej.biserie}</span>}
+                </p>
+                <h1 className="font-heading text-lg font-semibold leading-tight">{e.nombre}</h1>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {ej.repsMin}–{ej.repsMax} {e.medida === "segundos" ? "s" : "reps"} · RIR {ej.rir} · descanso {ej.descansoSeg}s
+                </p>
+                <span className={cn("mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold", ESTADO[ej.estado].clase)}>
+                  {ESTADO[ej.estado].texto}
+                </span>
+              </div>
+            </div>
+            <p className="rounded-2xl bg-secondary/50 p-2.5 text-sm leading-relaxed">{ej.mensaje}</p>
+            {ej.estado === "calibracion" && (
+              <p className="text-xs text-muted-foreground">
+                Anota el <strong>RIR</strong> (cuántas reps te quedaban): con 4 o más, la siguiente serie sube; con 2–3 ya
+                tienes tu peso; con 0–1, baja.
+              </p>
+            )}
+            {ej.ultimoRecurso && (
+              <Aviso tipo="warn">
+                Último recurso (Smith).{" "}
+                {ej.alternativaPreferida && <>Preferible si está libre: {ejercicio(ej.alternativaPreferida).nombre}.</>}
+              </Aviso>
+            )}
+            <div className="grid grid-cols-4 gap-1.5">
+              <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs" onClick={() => setTecnica(e.id)}>
+                <BookOpen /> Técnica
+              </Button>
+              <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs" onClick={() => setSustituir(true)}>
+                <ArrowRightLeft /> Cambiar
+              </Button>
+              <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs" onClick={() => setVerNotas((v) => !v)}>
+                <NotebookPen /> Notas
+              </Button>
+              <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs text-destructive" onClick={meDuele}>
+                <ShieldAlert /> Duele
+              </Button>
+            </div>
+            {verNotas && <NotaEjercicio exerciseId={e.id} />}
+          </Glass>
+
+          {/* Series */}
+          <ol className="space-y-2">
+            {ej.series.map((s, i) => {
+              const activa = i === serieActiva;
+              return (
+                <li key={i}>
+                  {activa ? (
+                    <Glass className="space-y-4 neon-border">
+                      <div className="flex items-baseline justify-between">
+                        <p className="font-heading font-semibold">Serie {i + 1}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Objetivo:{" "}
+                          <strong className="text-foreground">
+                            {s.objetivoPeso != null && `${s.objetivoPeso} kg × `}
+                            {s.objetivoReps} {e.medida === "segundos" ? "s" : "reps"}
+                          </strong>
+                        </p>
+                      </div>
+                      {conPeso && (
+                        <Stepper
+                          etiqueta="Peso"
+                          sufijo="kg"
+                          paso={paso}
+                          valor={borrador.pesoKg}
+                          onChange={(v) => setBorrador((b) => ({ ...b, pesoKg: v }))}
+                        />
+                      )}
+                      <Stepper
+                        etiqueta={e.medida === "segundos" ? "Segundos" : "Repeticiones"}
+                        paso={e.medida === "segundos" ? 5 : 1}
+                        decimales={0}
+                        valor={borrador.reps}
+                        onChange={(v) => setBorrador((b) => ({ ...b, reps: v }))}
+                      />
+                      <div>
+                        <p className="mb-1.5 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
+                          Reps en reserva (opcional)
+                        </p>
+                        <Chips<number>
+                          className="justify-center"
+                          valor={borrador.rir ?? -1}
+                          onChange={(v) => setBorrador((b) => ({ ...b, rir: b.rir === v ? null : (v as number) }))}
+                          opciones={[0, 1, 2, 3, 4].map((n) => ({ valor: n, etiqueta: n === 4 ? "4+" : String(n) }))}
+                        />
+                      </div>
+                      <motion.div whileTap={{ scale: 0.97 }}>
+                        <Button
+                          className="h-16 w-full rounded-2xl text-lg font-bold"
+                          disabled={borrador.reps == null}
+                          onClick={serieHecha}
+                        >
+                          <Check className="size-6" /> {s.hecho ? "Guardar cambios" : "Serie hecha"}
+                        </Button>
+                      </motion.div>
+                    </Glass>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditando(i)}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm",
+                        s.hecho ? "bg-lime/10" : "bg-secondary/50",
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        {s.hecho ? <Check className="size-4 text-lime" /> : <span className="size-4" />}
+                        Serie {i + 1}
+                      </span>
+                      <span className="flex items-center gap-2 tabular-nums text-muted-foreground">
+                        {s.hecho
+                          ? `${s.pesoKg != null ? `${s.pesoKg} kg × ` : ""}${s.reps}${s.rir != null ? ` · RIR ${s.rir}` : ""}`
+                          : `${s.pesoKg != null ? `${s.pesoKg} kg × ` : ""}${s.objetivoReps}`}
+                        {s.hecho && <Pencil className="size-3.5" />}
+                      </span>
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-1.5">
+              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => cambiarSeries(-1)}>
+                <Minus /> Serie
+              </Button>
+              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => cambiarSeries(1)}>
+                <Plus /> Serie
+              </Button>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              Buena técnica
+              <Switch
+                checked={ej.buenaTecnica}
+                onCheckedChange={(v) => mutarWorkout(workout.id, (w) => void (w.ejercicios[idx].buenaTecnica = v))}
+              />
+            </label>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navegación con el pulgar */}
+      {!descanso && (
+        <div className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-xl grid-cols-2 gap-2 rounded-t-3xl px-4 pt-3">
+          <Button
+            variant="secondary"
+            className="h-14 rounded-2xl text-base"
+            disabled={idx === 0}
+            onClick={() => {
+              setIdx(idx - 1);
+              setEditando(null);
+            }}
+          >
+            <ChevronLeft /> Anterior
+          </Button>
+          {idx < workout.ejercicios.length - 1 ? (
+            <Button
+              variant="secondary"
+              className="h-14 rounded-2xl text-base"
+              onClick={() => {
+                setIdx(idx + 1);
+                setEditando(null);
+              }}
+            >
+              Siguiente <ChevronRight />
+            </Button>
+          ) : (
+            <Button className="h-14 rounded-2xl text-base font-semibold" onClick={terminar}>
+              <Flag /> Terminar
+            </Button>
+          )}
+        </div>
+      )}
+
+      <RestTimer
+        descanso={descanso}
+        onFin={finDescanso}
+        onCambiar={(d) => (d ? setDescanso(d) : finDescanso())}
+        sonido={ajustes.sonido}
+        vibracion={ajustes.vibracion}
+      />
+      <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
+      <SustituirDialog
+        exerciseId={sustituir ? e.id : null}
+        perfil={perfil}
+        ocupados={workout.ejercicios.map((x) => x.exerciseId)}
+        onClose={() => setSustituir(false)}
+        onElegir={async (nuevo) => {
+          setSustituir(false);
+          await sustituirEnWorkout(workout.id, idx, nuevo, perfil, ajustes);
+          toast.success(`Cambiado por ${ejercicio(nuevo).nombre} (solo hoy)`);
+        }}
+      />
+    </div>
+  );
+}
+
+function Resumen({ workout, previos }: { workout: Workout; previos: ReturnType<typeof logsDeWorkouts> }) {
+  const [notas, setNotas] = useState(workout.notas);
+  useEffect(() => {
+    if (notas === workout.notas) return;
+    const t = setTimeout(() => void mutarWorkout(workout.id, (w) => void (w.notas = notas)), 500);
+    return () => clearTimeout(t);
+  }, [notas, workout]);
+
+  const series = workout.ejercicios.flatMap((e) => e.series.filter((s) => s.hecho));
+  const volumen = series.reduce((t, s) => t + (s.pesoKg ?? 0) * (s.reps ?? 0), 0);
+  const minutos = workout.fin ? Math.round((Date.parse(workout.fin) - Date.parse(workout.inicio)) / 60000) : null;
+  const records = workout.ejercicios
+    .map((ej) => {
+      const actual = mejorE1rm({ ...ej, fecha: workout.fecha, series: ej.series });
+      const antes = Math.max(0, ...previos.filter((l) => l.exerciseId === ej.exerciseId && l.fecha <= workout.fecha).map(mejorE1rm));
+      return { ej, actual, antes };
+    })
+    .filter((r) => r.actual > 0 && r.antes > 0 && r.actual > r.antes);
+
+  return (
+    <div className="space-y-4">
+      <div className="pt-6 text-center">
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-grid size-20 place-items-center rounded-full bg-lime/15 neon-border">
+          <Trophy className="size-9 text-lime" />
+        </motion.div>
+        <h1 className="mt-3 font-display text-2xl font-bold neon-text">¡Sesión completada!</h1>
+        <p className="text-sm text-muted-foreground">{workout.nombre}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <Stat etiqueta="Series" valor={series.length} />
+        <Stat etiqueta="Volumen" valor={`${Math.round(volumen)}`} detalle="kg × reps" color="violet" />
+        <Stat etiqueta="Tiempo" valor={minutos ?? "—"} detalle="min" color="lime" />
+      </div>
+      {records.length > 0 && (
+        <Glass>
+          <p className="mb-2 font-semibold">Nuevos récords (1RM estimado)</p>
+          <ul className="space-y-1 text-sm">
+            {records.map((r) => (
+              <li key={r.ej.exerciseId} className="flex justify-between">
+                <span>{ejercicio(r.ej.exerciseId).nombre}</span>
+                <span className="font-semibold text-lime">{Math.round(r.actual)} kg</span>
+              </li>
+            ))}
+          </ul>
+        </Glass>
+      )}
+      <Glass>
+        <label className="block text-sm font-medium" htmlFor="notas-sesion">
+          Notas de la sesión
+        </label>
+        <Textarea id="notas-sesion" value={notas} onChange={(e) => setNotas(e.target.value)} className="mt-2 min-h-24 rounded-2xl" />
+      </Glass>
+      <Button asChild className="h-14 w-full rounded-2xl text-base">
+        <Link href="/">Volver</Link>
+      </Button>
+    </div>
+  );
+}
+
+export default function Pagina() {
+  return (
+    <Suspense fallback={<Cargando />}>
+      <Sesion />
+    </Suspense>
+  );
+}
