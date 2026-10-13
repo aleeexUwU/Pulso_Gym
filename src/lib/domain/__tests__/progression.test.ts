@@ -1,0 +1,127 @@
+import { describe, expect, it } from "vitest";
+import { ejercicio } from "../exercises";
+import {
+  INCREMENTOS_POR_DEFECTO,
+  aplicarDescarga,
+  aplicarRampa,
+  evaluarDescarga,
+  sugerirCarga,
+  type ExerciseLog,
+} from "../progression";
+
+const perfil = { pesoKg: 75, sexo: "hombre" as const, experiencia: "principiante" as const };
+const rango = { repsMin: 8, repsMax: 12 };
+const press = ejercicio("press_mancuerna_una_mano");
+const prensa = ejercicio("prensa");
+
+function log(fecha: string, sets: [number, number, number?][], extra: Partial<ExerciseLog> = {}): ExerciseLog {
+  return {
+    fecha,
+    exerciseId: press.id,
+    ...rango,
+    buenaTecnica: true,
+    series: sets.map(([pesoKg, reps, rir]) => ({ pesoKg, reps, rir: rir ?? null, hecho: true })),
+    ...extra,
+  };
+}
+
+describe("calibración (semana 1)", () => {
+  it("sin historial propone calibrar con un peso conservador", () => {
+    const s = sugerirCarga(press, rango, [], INCREMENTOS_POR_DEFECTO, perfil);
+    expect(s.estado).toBe("calibracion");
+    expect(s.pesoKg).toBeGreaterThan(0);
+    expect(s.pesoKg).toBeLessThanOrEqual(8);
+  });
+
+  it("si todo fue demasiado ligero, sigue calibrando más arriba", () => {
+    const s = sugerirCarga(press, rango, [log("2026-10-10", [[6, 15, 6], [6, 15, 6]])], INCREMENTOS_POR_DEFECTO, perfil);
+    expect(s.estado).toBe("calibracion");
+    expect(s.pesoKg).toBe(10);
+  });
+
+  it("guarda como punto de partida el peso con 2–3 reps en reserva", () => {
+    const s = sugerirCarga(
+      press,
+      rango,
+      [log("2026-10-10", [[6, 12, 5], [10, 10, 3], [12, 8, 1]])],
+      INCREMENTOS_POR_DEFECTO,
+      perfil,
+    );
+    expect(s.estado).not.toBe("calibracion");
+  });
+});
+
+describe("doble progresión", () => {
+  it("sube el peso al llegar al tope del rango en todas las series con buena técnica", () => {
+    const s = sugerirCarga(
+      press,
+      rango,
+      [log("2026-10-10", [[12, 12, 2], [12, 12, 2], [12, 12, 1]])],
+      INCREMENTOS_POR_DEFECTO,
+      perfil,
+    );
+    expect(s.estado).toBe("subir");
+    expect(s.pesoKg).toBe(14);
+  });
+
+  it("usa el incremento de máquina en la prensa", () => {
+    const l: ExerciseLog = {
+      ...log("2026-10-10", [[60, 12, 2], [60, 12, 2]]),
+      exerciseId: prensa.id,
+      repsMin: 10,
+      repsMax: 12,
+    };
+    const s = sugerirCarga(prensa, { repsMin: 10, repsMax: 12 }, [l], INCREMENTOS_POR_DEFECTO, perfil);
+    expect(s.pesoKg).toBe(65);
+  });
+
+  it("no sube si la técnica no fue buena", () => {
+    const s = sugerirCarga(
+      press,
+      rango,
+      [log("2026-10-10", [[12, 12, 2], [12, 12, 2]], { buenaTecnica: false })],
+      INCREMENTOS_POR_DEFECTO,
+      perfil,
+    );
+    expect(s.estado).toBe("mantener");
+  });
+
+  it("mantiene si no llega al mínimo una vez y baja si falla dos sesiones seguidas", () => {
+    const una = sugerirCarga(press, rango, [log("2026-10-10", [[12, 10, 2], [12, 7, 0]])], INCREMENTOS_POR_DEFECTO, perfil);
+    expect(una.estado).toBe("mantener");
+    const dos = sugerirCarga(
+      press,
+      rango,
+      [log("2026-10-10", [[12, 10, 2], [12, 7, 0]]), log("2026-10-12", [[12, 9, 1], [12, 6, 0]])],
+      INCREMENTOS_POR_DEFECTO,
+      perfil,
+    );
+    expect(dos.estado).toBe("bajar");
+    expect(dos.pesoKg).toBe(10);
+  });
+});
+
+describe("descarga y rampa", () => {
+  const settings = { inicioPrograma: "2026-08-01", ultimaDescarga: null, semanasDescarga: 7, descargaHasta: null };
+
+  it("sugiere descarga al pasar las semanas configuradas", () => {
+    expect(evaluarDescarga("2026-09-25", settings, []).sugerir).toBe(true);
+    expect(evaluarDescarga("2026-08-20", settings, []).sugerir).toBe(false);
+  });
+
+  it("sugiere descarga si cae el rendimiento en 3 ejercicios", () => {
+    const hist: ExerciseLog[] = [];
+    for (const id of ["a", "b", "c"]) {
+      hist.push({ ...log("2026-08-05", [[20, 10]]), exerciseId: id });
+      hist.push({ ...log("2026-08-08", [[20, 10]]), exerciseId: id });
+      hist.push({ ...log("2026-08-12", [[16, 8]]), exerciseId: id });
+    }
+    expect(evaluarDescarga("2026-08-13", settings, hist).sugerir).toBe(true);
+  });
+
+  it("la descarga reduce series a la mitad y suma un RIR; la rampa quita una serie al principio", () => {
+    expect(aplicarDescarga({ series: 4, rir: 2 })).toEqual({ series: 2, rir: 3 });
+    expect(aplicarRampa({ series: 4 }, 0).series).toBe(3);
+    expect(aplicarRampa({ series: 4 }, 3).series).toBe(4);
+  });
+});
