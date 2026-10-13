@@ -64,6 +64,11 @@ Rutina diaria variada (recto, oblicuos, transverso/estabilidad y lumbar), sin ap
 ### Brazo izquierdo
 Desactivado por defecto y fuera de la navegación y del plan semanal hasta activarlo. Al activarlo: autoevaluación guiada (agarre, codo, hombro, apoyo del antebrazo, dolor), ejercicios propios (nombre, descripción, series/reps o tiempo, carga, enlace a vídeo o vídeo propio), catálogo de ideas que **no se carga** salvo que lo importes (filtrado por la autoevaluación), sesiones con **escala de dolor 0–10** (aviso por encima de 3) e historial y gráficas propios. La autoevaluación también decide si el core puede incluir plancha sobre antebrazos.
 
+### Dieta
+Registro de comidas de cuatro formas: **foto** (IA), **código de barras** (Open Food Facts, gratis), **texto** (tabla local de ~95 alimentos, sin conexión; o IA si está activa) y **manual**. Objetivos diarios con Mifflin-St Jeor según peso, altura, edad, días de entreno y objetivo (ganar / mantener / perder), y avisos de si te falta comer, te falta proteína o te has pasado.
+
+La IA vive en la Edge Function `supabase/functions/analizar-comida`: usa **Google Gemini** (nivel gratuito; Google puede usar ese contenido para mejorar sus productos) y, si no hay clave o se agota el límite, **Claude Haiku 5.5** (~0,2 céntimos por foto). Secretos en Supabase: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` (opcional), `ALLOWED_EMAILS` (obligatorio: emails que pueden usarla) y opcionalmente `PROVEEDOR_IA` / `GEMINI_MODEL`. Publicar: `npx supabase functions deploy analizar-comida --project-ref <ref>`.
+
 ### Progreso
 Calendario unificado, historial por sesión, gráficas (peso y 1RM estimado por ejercicio, volumen semanal por grupo, asistencia), récords, rachas, peso corporal opcional y evolución del brazo izquierdo. Cada gráfica tiene vista de tabla. Exportación a **CSV** (por módulo) y **JSON** (copia completa, también restaurable).
 
@@ -83,6 +88,7 @@ Calendario unificado, historial por sesión, gráficas (peso y 1RM estimado por 
 
 - **Imágenes de ejercicios**: [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db), licencia **The Unlicense** (dominio público; comprobada en el repositorio el 13/10/2026). Se descargan y optimizan a WebP con `npm run imagenes`. Algunas fotos muestran la versión a dos manos: cada ejercicio lleva una **nota de adaptación** que explica cómo hacerlo con un solo brazo. Nombres, pasos y errores comunes están escritos en español para esta app.
 - **Ilustraciones SVG** de los ejercicios adaptados, icono, splash y ojo: propios de esta app.
+- **Productos envasados**: [Open Food Facts](https://world.openfoodfacts.org), licencia ODbL.
 - **Fuentes**: Inter, Bebas Neue y Nosifer (Google Fonts, SIL Open Font License).
 
 ## Estructura
