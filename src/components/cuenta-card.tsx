@@ -14,6 +14,8 @@ export function CuentaCard() {
   const [usuario, setUsuario] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoSync>({ tipo: "local" });
   const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  const [codigo, setCodigo] = useState("");
 
   useEffect(() => suscribirSync(setEstado), []);
   useEffect(() => {
@@ -48,17 +50,59 @@ export function CuentaCard() {
             options: { emailRedirectTo: `${window.location.origin}/ajustes/` },
           });
           setEnviando(false);
-          if (error) toast.error(error.message);
-          else toast.success("Te he enviado un enlace. Ábrelo en este mismo dispositivo.");
+          if (error) {
+            toast.error(
+              /rate limit/i.test(error.message)
+                ? "Has pedido demasiados correos seguidos. Espera unos minutos y vuelve a intentarlo."
+                : error.message,
+            );
+          } else {
+            setEnviado(true);
+            toast.success("Correo enviado. Abre el enlace o escribe aquí el código.");
+          }
         }}
       >
-        <p className="text-sm text-muted-foreground">Inicia sesión con un enlace por email para guardar tus datos en la nube.</p>
+        <p className="text-sm text-muted-foreground">
+          Inicia sesión con tu email para guardar tus datos en la nube. Te llegará un correo con un enlace y un código.
+        </p>
         <div className="flex gap-2">
           <Input type="email" required autoComplete="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl" aria-label="Email" />
           <Button type="submit" className="h-12 rounded-xl" disabled={enviando}>
-            <Mail /> Enviar
+            <Mail /> {enviado ? "Reenviar" : "Enviar"}
           </Button>
         </div>
+        {enviado && (
+          <div className="space-y-2 rounded-xl bg-secondary/50 p-3">
+            <p className="text-sm">
+              ¿El enlace no te deja dentro? Escribe el <strong>código de 6 dígitos</strong> del correo:
+            </p>
+            <div className="flex gap-2">
+              <Input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={10}
+                placeholder="123456"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
+                className="h-12 rounded-xl text-center font-heading text-2xl tracking-[0.3em]"
+                aria-label="Código del correo"
+              />
+              <Button
+                type="button"
+                className="h-12 rounded-xl"
+                disabled={codigo.length < 6}
+                onClick={async () => {
+                  const { error } = await supabase()!.auth.verifyOtp({ email, token: codigo, type: "email" });
+                  if (error) toast.error(/expired|invalid/i.test(error.message) ? "Código incorrecto o caducado. Pide otro." : error.message);
+                  else toast.success("¡Sesión iniciada!");
+                }}
+              >
+                Entrar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Si no llega en unos minutos, mira en spam.</p>
+          </div>
+        )}
       </form>
     );
   }
