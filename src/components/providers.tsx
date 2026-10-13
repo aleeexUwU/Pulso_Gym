@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useAbsSessions, useAjustes } from "@/lib/db/hooks";
 import { hoyISO } from "@/lib/domain/dates";
 import { mostrarNotificacion, sincronizarRecordatorioConSW } from "@/lib/pwa/recordatorio";
+import { configurarHaptica } from "@/lib/haptics";
 import { iniciarSyncAutomatica } from "@/lib/sync/sync";
 
 /** Registra el service worker en producción y avisa cuando hay versión nueva. */
@@ -41,6 +42,7 @@ function TemaDesdeAjustes() {
   const { setTheme } = useTheme();
   useEffect(() => {
     if (!ajustes) return;
+    configurarHaptica(ajustes.vibracion);
     setTheme(ajustes.tema === "claro" ? "light" : ajustes.tema === "sistema" ? "system" : "dark");
   }, [ajustes, setTheme]);
   return null;

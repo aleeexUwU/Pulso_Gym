@@ -1,10 +1,14 @@
 "use client";
 
-import { motion, type HTMLMotionProps } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, type HTMLMotionProps } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Cabecera de página: título en Orbitron con degradado neón. */
+/**
+ * Cabecera de página. Al hacer scroll y perder de vista el título grande, aparece
+ * una barra fija y compacta arriba con el mismo título (como en las apps nativas).
+ */
 export function PageHeader({
   titulo,
   subtitulo,
@@ -14,27 +18,68 @@ export function PageHeader({
   subtitulo?: React.ReactNode;
   accion?: React.ReactNode;
 }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [compacta, setCompacta] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setCompacta(!e.isIntersecting), { rootMargin: "-12px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <header className="mb-5 flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="glitch font-display text-4xl uppercase leading-none tracking-wide text-foreground" data-text={titulo}>
-          {titulo}
-        </h1>
-        <div className="trazo-rasgado mt-1.5 w-28" aria-hidden />
-        {subtitulo && <p className="mt-2 text-sm text-muted-foreground">{subtitulo}</p>}
-      </div>
-      {accion}
-    </header>
+    <>
+      <AnimatePresence>
+        {compacta && (
+          <motion.div
+            initial={{ y: "-100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "-100%" }}
+            transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            className="safe-top fixed inset-x-0 top-0 z-30 mx-auto max-w-xl border-b border-border bg-background/85 backdrop-blur-md"
+            aria-hidden
+          >
+            <p className="px-4 py-2.5 font-display text-2xl leading-none">{titulo}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 ref={ref} className="glitch font-display text-4xl uppercase leading-none tracking-wide text-foreground" data-text={titulo}>
+            {titulo}
+          </h1>
+          <div className="trazo-rasgado mt-1.5 w-28" aria-hidden />
+          {subtitulo && <p className="mt-2 text-sm text-muted-foreground">{subtitulo}</p>}
+        </div>
+        {accion}
+      </header>
+    </>
   );
+}
+
+/** Número que cuenta desde 0 hasta su valor al aparecer (y entre valores al cambiar). */
+export function NumeroAnimado({ valor, decimales = 0 }: { valor: number; decimales?: number }) {
+  const mv = useMotionValue(0);
+  const texto = useTransform(mv, (v) => v.toFixed(decimales));
+  useEffect(() => {
+    const reducido = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reducido) {
+      mv.set(valor);
+      return;
+    }
+    const c = animate(mv, valor, { duration: 0.7, ease: [0.2, 0.8, 0.2, 1] });
+    return () => c.stop();
+  }, [valor, mv]);
+  return <motion.span className="tabular-nums">{texto}</motion.span>;
 }
 
 /** Tarjeta de cristal con aparición suave. */
 export function Glass({ className, children, ...props }: HTMLMotionProps<"section">) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn("glass rounded-3xl p-4", className)}
       {...props}
     >
@@ -169,7 +214,9 @@ export function Stat({ etiqueta, valor, detalle, color = "primary" }: {
   return (
     <div className="rounded-2xl bg-secondary/50 p-3">
       <div className="text-[11px] text-muted-foreground">{etiqueta}</div>
-      <div className={cn("font-display text-3xl tabular-nums", colores[color])}>{valor}</div>
+      <div className={cn("font-display text-3xl tabular-nums", colores[color])}>
+        {typeof valor === "number" ? <NumeroAnimado valor={valor} /> : valor}
+      </div>
       {detalle && <div className="text-xs text-muted-foreground">{detalle}</div>}
     </div>
   );

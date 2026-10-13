@@ -7,7 +7,7 @@ import { Suspense, useMemo } from "react";
 import { GraficaBarras } from "@/components/charts";
 import { FotoLocal } from "@/components/dieta/foto-local";
 import { Button } from "@/components/ui/button";
-import { Aviso, Cargando, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
+import { Aviso, Cargando, Glass, NumeroAnimado, PageHeader, SectionTitle } from "@/components/ui-kit";
 import { TIPOS_COMIDA, totales } from "@/lib/app/dieta";
 import { useAjustes, useComidas, usePerfil, usePlan } from "@/lib/db/hooks";
 import { borrar } from "@/lib/db/repo";
@@ -111,7 +111,9 @@ function Dieta() {
         <div className="flex items-end justify-between">
           <div>
             <p className="text-xs text-muted-foreground">Calorías</p>
-            <p className="font-display text-5xl tabular-nums text-primary">{Math.round(t.kcal)}</p>
+            <p className="font-display text-5xl tabular-nums text-primary">
+              <NumeroAnimado valor={Math.round(t.kcal)} />
+            </p>
           </div>
           <p className="pb-1 text-right text-sm text-muted-foreground">
             de {obj.kcal} kcal

@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, Apple, Check, ChevronRight, Dumbbell } from "lucide-react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { filtroCasa } from "@/lib/app/planificacion";
 import { totales } from "@/lib/app/dieta";
@@ -27,7 +28,7 @@ function Fila({
   progreso?: number;
 }) {
   return (
-    <li>
+    <motion.li variants={{ oculto: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}>
       <Link href={href} className="group flex items-center gap-3 py-3">
         <span
           className={cn(
@@ -42,16 +43,18 @@ function Fila({
           <span className="block truncate text-sm text-muted-foreground">{detalle}</span>
           {progreso !== undefined && (
             <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-secondary" aria-hidden>
-              <span
-                className={cn("block h-full rounded-full", progreso >= 0.9 ? "bg-lime/85" : "bg-gradient-to-r from-[var(--neon)] to-[var(--violet)]")}
-                style={{ width: `${Math.min(100, progreso * 100)}%` }}
+              <motion.span
+                className={cn("block h-full origin-left rounded-full", progreso >= 0.9 ? "bg-lime/85" : "bg-gradient-to-r from-[var(--neon)] to-[var(--violet)]")}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: Math.min(1, progreso) }}
+                transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1], delay: 0.25 }}
               />
             </span>
           )}
         </span>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-active:translate-x-0.5" aria-hidden />
       </Link>
-    </li>
+    </motion.li>
   );
 }
 
@@ -90,7 +93,12 @@ export function ResumenHoy() {
 
   return (
     <section aria-label="Hoy" className="glass px-4 py-1">
-      <ul className="divide-y divide-border">
+      <motion.ul
+        className="divide-y divide-border"
+        initial="oculto"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+      >
         <Fila
           href="/"
           icono={Dumbbell}
@@ -125,7 +133,7 @@ export function ResumenHoy() {
           hecho={t.kcal >= obj.kcal * 0.9 && t.proteinas >= obj.proteinas * 0.9}
           progreso={obj.kcal ? t.kcal / obj.kcal : 0}
         />
-      </ul>
+      </motion.ul>
     </section>
   );
 }

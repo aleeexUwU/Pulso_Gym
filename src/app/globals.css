@@ -153,6 +153,25 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
+  /*
+   * Respuesta al tocar en pantallas táctiles: todo lo pulsable se hunde un poco.
+   * Se usa la propiedad `scale` (no `transform`) para no pisar los translate de Tailwind.
+   */
+  @media (hover: none) {
+    button:not(:disabled),
+    a[href],
+    [role="tab"],
+    [role="checkbox"],
+    label:has(input) {
+      transition: scale 120ms ease-out;
+    }
+    button:not(:disabled):active,
+    a[href]:active,
+    [role="tab"]:active,
+    [role="checkbox"]:active {
+      scale: 0.96;
+    }
+  }
 }
 
 @layer components {

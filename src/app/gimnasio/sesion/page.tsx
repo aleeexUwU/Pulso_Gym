@@ -36,6 +36,7 @@ import type { Workout, WorkoutExercise, WorkoutSet } from "@/lib/db/types";
 import { ejercicio } from "@/lib/domain/exercises";
 import { incrementoPara, mejorE1rm, redondearPeso, type EstadoProgresion } from "@/lib/domain/progression";
 import type { LoadType } from "@/lib/domain/types";
+import { toque } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 const ESTADO: Record<EstadoProgresion, { texto: string; clase: string }> = {
@@ -90,6 +91,8 @@ function Sesion() {
   const perfil = usePerfil();
   const ajustes = useAjustes();
   const [idxElegido, setIdx] = useState<number | null>(null);
+  // Dirección de la última navegación entre ejercicios (1 = siguiente, -1 = anterior) para la transición.
+  const [dir, setDir] = useState(1);
   const [editando, setEditando] = useState<number | null>(null);
   const [descanso, setDescanso] = useState<Descanso | null>(null);
   const [destino, setDestino] = useState<number | null>(null);
@@ -108,11 +111,12 @@ function Sesion() {
   const finDescanso = useCallback(() => {
     setDescanso(null);
     if (destino !== null) {
+      setDir(destino >= idxActual ? 1 : -1);
       setIdx(destino);
       setEditando(null);
       setDestino(null);
     }
-  }, [destino]);
+  }, [destino, idxActual]);
 
   const previos = useMemo(
     () => logsDeWorkouts((todos ?? []).filter((w) => w.id !== id && w.estado === "completado")),
@@ -160,7 +164,10 @@ function Sesion() {
       siguiente = w;
     });
     setEditando(null);
-    if (!yaEstaba) setFlash((f) => f + 1);
+    if (!yaEstaba) {
+      setFlash((f) => f + 1);
+      toque(15);
+    }
     if (yaEstaba || !siguiente) return;
     const w = siguiente as Workout;
     const actual = w.ejercicios[idx];
@@ -215,6 +222,7 @@ function Sesion() {
       toast.warning(`Marcado con molestia. Cambiado por ${ejercicio(alt).nombre}.`);
     } else {
       await mutarWorkout(workout!.id, (w) => void w.ejercicios.splice(idx!, 1));
+      setDir(-1);
       setIdx(Math.max(0, idx! - 1));
       toast.warning("Marcado con molestia y retirado de la sesión.");
     }
@@ -261,6 +269,7 @@ function Sesion() {
             aria-selected={i === idx}
             aria-label={`${i + 1}. ${ejercicio(x.exerciseId).nombre}`}
             onClick={() => {
+              setDir(i >= idx ? 1 : -1);
               setIdx(i);
               setEditando(null);
             }}
@@ -272,15 +281,44 @@ function Sesion() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" custom={dir}>
         <motion.div
           key={`${ej.exerciseId}-${idx}`}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -30 }}
-          transition={{ duration: 0.18 }}
+          custom={dir}
+          variants={{
+            entra: (d: number) => ({ opacity: 0, x: 48 * d }),
+            centro: { opacity: 1, x: 0 },
+            sale: (d: number) => ({ opacity: 0, x: -48 * d }),
+          }}
+          initial="entra"
+          animate="centro"
+          exit="sale"
+          transition={{ type: "spring", stiffness: 520, damping: 42, opacity: { duration: 0.15 } }}
           className="space-y-4"
         >
+          {/* Desliza la tarjeta a izquierda/derecha para cambiar de ejercicio. */}
+          <motion.div
+            drag="x"
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.3}
+            dragSnapToOrigin
+            style={{ touchAction: "pan-y" }}
+            onDragEnd={(_, info) => {
+              const n = workout.ejercicios.length;
+              if ((info.offset.x < -70 || info.velocity.x < -600) && idx < n - 1) {
+                toque();
+                setDir(1);
+                setIdx(idx + 1);
+                setEditando(null);
+              } else if ((info.offset.x > 70 || info.velocity.x > 600) && idx > 0) {
+                toque();
+                setDir(-1);
+                setIdx(idx - 1);
+                setEditando(null);
+              }
+            }}
+          >
           <Glass className="space-y-3">
             <div className="flex gap-3">
               <button type="button" onClick={() => setTecnica(e.id)} aria-label="Ver técnica">
@@ -289,6 +327,7 @@ function Sesion() {
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">
                   Ejercicio {idx + 1} de {workout.ejercicios.length}
+                  {idx === 0 && <span className="text-muted-foreground/70"> · desliza para cambiar</span>}
                   {ej.biserie && <span className="ml-1 font-semibold text-violet">· Biserie {ej.biserie}</span>}
                 </p>
                 <h1 className="font-heading text-2xl leading-tight tracking-wide">{e.nombre}</h1>
@@ -329,6 +368,7 @@ function Sesion() {
             </div>
             {verNotas && <NotaEjercicio exerciseId={e.id} />}
           </Glass>
+          </motion.div>
 
           {/* Series */}
           <ol className="space-y-2">
@@ -356,7 +396,18 @@ function Sesion() {
                       )}
                     >
                       <span className="flex items-center gap-2">
-                        {s.hecho ? <Check className="size-4 text-lime" /> : <span className="size-4" />}
+                        {s.hecho ? (
+                          <motion.span
+                            initial={{ scale: 0, rotate: -30 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 600, damping: 18 }}
+                            className="grid place-items-center"
+                          >
+                            <Check className="size-4 text-lime" />
+                          </motion.span>
+                        ) : (
+                          <span className="size-4" />
+                        )}
                         Serie {i + 1}
                       </span>
                       <span className="flex items-center gap-2 tabular-nums text-muted-foreground">
@@ -400,6 +451,7 @@ function Sesion() {
             className="h-14 rounded-2xl text-base"
             disabled={idx === 0}
             onClick={() => {
+              setDir(-1);
               setIdx(idx - 1);
               setEditando(null);
             }}
@@ -411,6 +463,7 @@ function Sesion() {
               variant="secondary"
               className="h-14 rounded-2xl text-base"
               onClick={() => {
+                setDir(1);
                 setIdx(idx + 1);
                 setEditando(null);
               }}

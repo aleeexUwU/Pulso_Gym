@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 import { useAjustes, usePerfil } from "@/lib/db/hooks";
+import { toque } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 function useOnline() {
@@ -77,6 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <li key={href} className="flex-1">
                 <Link
                   href={href}
+                  onClick={() => !activo && toque()}
                   aria-current={activo ? "page" : undefined}
                   className={cn(
                     "relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition-colors",
@@ -90,7 +92,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       transition={{ type: "spring", stiffness: 500, damping: 40 }}
                     />
                   )}
-                  <Icon className="size-5" aria-hidden />
+                  <motion.span
+                    key={activo ? "activo" : "inactivo"}
+                    initial={activo ? { y: 0, scale: 1 } : false}
+                    animate={activo ? { y: [0, -4, 0], scale: [1, 1.18, 1] } : { y: 0, scale: 1 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="grid place-items-center"
+                  >
+                    <Icon className="size-5" aria-hidden />
+                  </motion.span>
                   {label}
                 </Link>
               </li>
