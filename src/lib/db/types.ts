@@ -121,7 +121,7 @@ export interface Comida extends SyncMeta {
   tipo: TipoComida;
   descripcion: string;
   items: ItemComida[];
-  fuente: "texto" | "ia-texto" | "ia-foto" | "manual";
+  fuente: "texto" | "ia-texto" | "ia-foto" | "manual" | "codigo";
   notasIA?: string;
   /** Foto guardada solo en este dispositivo (tabla media). */
   fotoMediaId?: string;

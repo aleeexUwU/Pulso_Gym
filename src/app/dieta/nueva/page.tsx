@@ -1,9 +1,10 @@
 "use client";
 
-import { Camera, Keyboard, Loader2, PenLine, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { Barcode, Camera, Keyboard, Loader2, PenLine, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EscanerCodigo } from "@/components/dieta/escaner-codigo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Aviso, Cargando, Chips, Glass, PageHeader, SectionTitle, Stepper } from "@/components/ui-kit";
 import { analizarConIA, comprimirImagen, guardarComida, iaDisponible, TIPOS_COMIDA, tipoPorHora, totales } from "@/lib/app/dieta";
+import { buscarPorCodigo, type ProductoOFF } from "@/lib/app/openfoodfacts";
 import { useComidas } from "@/lib/db/hooks";
 import type { Comida, TipoComida } from "@/lib/db/types";
 import { hoyISO } from "@/lib/domain/dates";
@@ -18,7 +20,7 @@ import { ALIMENTOS, nutrientesDe } from "@/lib/domain/nutrition/alimentos";
 import { analizarTexto, cambiarGramos, itemDeAlimento, normalizar, type ItemComida } from "@/lib/domain/nutrition/parser";
 import { cn } from "@/lib/utils";
 
-type Modo = "foto" | "texto" | "manual";
+type Modo = "foto" | "codigo" | "texto" | "manual";
 
 function ahoraHHMM() {
   const d = new Date();
@@ -41,6 +43,9 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
   const [ia, setIa] = useState<{ ok: boolean; motivo?: string } | null>(null);
   const [cargando, setCargando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [producto, setProducto] = useState<ProductoOFF | null>(null);
+  const [gramosProducto, setGramosProducto] = useState<number | null>(100);
+  const [buscandoCodigo, setBuscandoCodigo] = useState(false);
   const [manual, setManual] = useState({ nombre: "", gramos: 100, kcal: 0, proteinas: 0, carbohidratos: 0, grasas: 0 });
 
   useEffect(() => {
@@ -62,6 +67,21 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
       setFoto({ base64, blob, url: URL.createObjectURL(blob) });
     } catch {
       toast.error("No se pudo leer la foto.");
+    }
+  }
+
+  async function leerCodigo(codigo: string) {
+    setBuscandoCodigo(true);
+    setProducto(null);
+    try {
+      const p = await buscarPorCodigo(codigo);
+      if (!p) return toast.error(`No encuentro el producto ${codigo} en Open Food Facts. Añádelo en «Manual».`);
+      setProducto(p);
+      setGramosProducto(p.racionG ?? 100);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo buscar el producto.");
+    } finally {
+      setBuscandoCodigo(false);
     }
   }
 
@@ -133,10 +153,11 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
         </div>
       </Glass>
 
-      <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="Cómo añadir la comida">
+      <div className="grid grid-cols-4 gap-2" role="tablist" aria-label="Cómo añadir la comida">
         {(
           [
             ["foto", "Foto", Camera],
+            ["codigo", "Código", Barcode],
             ["texto", "Escribir", Keyboard],
             ["manual", "Manual", PenLine],
           ] as const
@@ -184,6 +205,62 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!foto || cargando || !ia?.ok} onClick={analizar}>
             {cargando ? <Loader2 className="animate-spin" /> : <Sparkles />} Analizar foto con IA
           </Button>
+        </Glass>
+      )}
+
+      {modo === "codigo" && (
+        <Glass className="space-y-3">
+          <EscanerCodigo onCodigo={leerCodigo} buscando={buscandoCodigo} />
+          {producto && (
+            <div className="space-y-3 rounded-2xl bg-secondary/50 p-3">
+              <div className="flex gap-3">
+                {producto.imagen && (
+                  // eslint-disable-next-line @next/next/no-img-element -- imagen externa de Open Food Facts
+                  <img src={producto.imagen} alt="" className="size-16 shrink-0 rounded-xl bg-white object-contain" />
+                )}
+                <div className="min-w-0">
+                  <p className="font-medium leading-tight">{producto.nombre}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {producto.marca} · {Math.round(producto.por100.kcal)} kcal / 100 g · P {producto.por100.proteinas} · C{" "}
+                    {producto.por100.carbohidratos} · G {producto.por100.grasas}
+                  </p>
+                  {producto.racionTexto && <p className="text-xs text-muted-foreground">Ración de la etiqueta: {producto.racionTexto}</p>}
+                </div>
+              </div>
+              <Stepper etiqueta="Cantidad que has tomado" sufijo="g" paso={10} decimales={0} valor={gramosProducto} onChange={setGramosProducto} />
+              <Button
+                className="h-12 w-full rounded-2xl"
+                disabled={!gramosProducto}
+                onClick={() => {
+                  const g = Math.max(1, gramosProducto ?? 100);
+                  const n = nutrientesDe(producto.por100, g);
+                  const r = (x: number) => Math.round(x * 10) / 10;
+                  setItems((xs) => [
+                    ...xs,
+                    {
+                      nombre: producto.marca ? `${producto.nombre} (${producto.marca})` : producto.nombre,
+                      gramos: g,
+                      por100: producto.por100,
+                      confianza: "alta",
+                      kcal: Math.round(n.kcal),
+                      proteinas: r(n.proteinas),
+                      carbohidratos: r(n.carbohidratos),
+                      grasas: r(n.grasas),
+                      fibra: r(n.fibra),
+                      azucares: r(n.azucares),
+                      sal: Math.round(n.sal * 100) / 100,
+                    },
+                  ]);
+                  if (items.length === 0) setFuente("codigo");
+                  setProducto(null);
+                  toast.success("Añadido");
+                }}
+              >
+                <Plus /> Añadir a la comida
+              </Button>
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground">Datos de productos: Open Food Facts (licencia ODbL), base de datos colaborativa.</p>
         </Glass>
       )}
 
