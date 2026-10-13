@@ -1,28 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Icono propio: ojo carmesí sobre negro con grietas y panal tenue. -->
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#22e5ff"/>
-      <stop offset="1" stop-color="#a855f7"/>
-    </linearGradient>
-    <radialGradient id="bg" cx="0.3" cy="0.2" r="1">
-      <stop offset="0" stop-color="#1a1530"/>
-      <stop offset="1" stop-color="#06060b"/>
+    <radialGradient id="bg" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#2a0a0f"/>
+      <stop offset="0.55" stop-color="#120c0d"/>
+      <stop offset="1" stop-color="#070506"/>
     </radialGradient>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="10" result="b"/>
+    <radialGradient id="iris" cx="0.45" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#ff5a66"/>
+      <stop offset="0.45" stop-color="#e3142f"/>
+      <stop offset="1" stop-color="#5e0612"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
+    <filter id="ruido">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3"/>
+      <feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0"/>
+    </filter>
+    <pattern id="hex" width="56" height="100" patternUnits="userSpaceOnUse">
+      <path d="M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100" fill="none" stroke="#c4142f" stroke-opacity="0.12" stroke-width="2"/>
+    </pattern>
+    <clipPath id="ojo"><path d="M56 256 Q256 96 456 256 Q256 416 56 256Z"/></clipPath>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <g filter="url(#glow)" fill="none" stroke="url(#g)" stroke-linecap="round" stroke-linejoin="round">
-    <!-- mancuerna -->
-    <rect x="70" y="206" width="30" height="100" rx="10" stroke-width="18"/>
-    <rect x="118" y="170" width="38" height="172" rx="12" stroke-width="20"/>
-    <rect x="356" y="170" width="38" height="172" rx="12" stroke-width="20"/>
-    <rect x="412" y="206" width="30" height="100" rx="10" stroke-width="18"/>
-    <line x1="166" y1="256" x2="190" y2="256" stroke-width="18"/>
-    <line x1="322" y1="256" x2="346" y2="256" stroke-width="18"/>
-    <!-- pulso -->
-    <polyline points="190,256 214,256 234,206 262,306 284,232 298,256 322,256" stroke-width="15" stroke="#c6ff3d"/>
+  <rect width="512" height="512" fill="url(#hex)"/>
+  <rect width="512" height="512" filter="url(#ruido)"/>
+  <!-- grietas -->
+  <g fill="none" stroke="#efe6d2" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round">
+    <path d="M0 420 L70 400 L96 440 L150 404 L184 418 L230 360"/>
+    <path d="M96 440 L84 512"/>
+    <path d="M512 96 L452 120 L430 84 L380 112"/>
+  </g>
+  <!-- salpicaduras discretas -->
+  <g fill="#b3122b" fill-opacity="0.5">
+    <circle cx="432" cy="420" r="14"/><circle cx="462" cy="452" r="6"/><circle cx="404" cy="458" r="4"/>
+    <circle cx="74" cy="92" r="8"/><circle cx="100" cy="70" r="3"/>
+  </g>
+  <!-- ojo -->
+  <path d="M56 256 Q256 96 456 256 Q256 416 56 256Z" fill="#050304" stroke="#efe6d2" stroke-opacity="0.45" stroke-width="6"/>
+  <g clip-path="url(#ojo)">
+    <g stroke="#c4142f" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M180 236 Q130 220 90 236 Q70 242 56 236"/>
+      <path d="M184 282 Q140 302 100 292"/>
+      <path d="M332 232 Q380 214 420 228 Q440 232 456 222"/>
+      <path d="M328 284 Q376 304 418 294"/>
+    </g>
+    <circle cx="256" cy="256" r="84" fill="url(#iris)" filter="url(#glow)"/>
+    <circle cx="256" cy="256" r="84" fill="none" stroke="#2a0207" stroke-width="7"/>
+    <ellipse cx="256" cy="256" rx="15" ry="34" fill="#050304"/>
+    <circle cx="230" cy="228" r="12" fill="#fff4f0" opacity="0.85"/>
   </g>
 </svg>

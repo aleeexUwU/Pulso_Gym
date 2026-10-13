@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, SkipForward } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 /** Pitido corto con Web Audio (no necesita archivos). */
 export function pitar(veces = 2) {
@@ -86,7 +87,7 @@ export function RestTimer({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 120, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 34 }}
-          className="glass safe-bottom fixed inset-x-0 bottom-0 z-50 mx-auto max-w-xl rounded-t-3xl px-4 pt-3"
+          className="rasgado-arriba safe-bottom fixed inset-x-0 bottom-0 z-50 mx-auto max-w-xl bg-background/95 px-4 backdrop-blur-md"
           role="timer"
           aria-live="polite"
         >
@@ -96,7 +97,7 @@ export function RestTimer({
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground">{descanso.etiqueta}</p>
-              <p className="font-display text-5xl font-bold tabular-nums neon-text">
+              <p className={cn("font-display text-6xl tabular-nums text-primary", restante <= 3 && "parpadeo")}>
                 {mm}:{ss}
               </p>
             </div>

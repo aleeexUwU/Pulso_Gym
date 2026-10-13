@@ -17,8 +17,11 @@ export function PageHeader({
   return (
     <header className="mb-5 flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-wide neon-text">{titulo}</h1>
-        {subtitulo && <p className="mt-1 text-sm text-muted-foreground">{subtitulo}</p>}
+        <h1 className="glitch font-display text-4xl uppercase leading-none tracking-wide text-foreground" data-text={titulo}>
+          {titulo}
+        </h1>
+        <div className="trazo-rasgado mt-1.5 w-28" aria-hidden />
+        {subtitulo && <p className="mt-2 text-sm text-muted-foreground">{subtitulo}</p>}
       </div>
       {accion}
     </header>
@@ -43,7 +46,7 @@ export function Glass({ className, children, ...props }: HTMLMotionProps<"sectio
 export function SectionTitle({ children, accion }: { children: React.ReactNode; accion?: React.ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-2">
-      <h2 className="font-heading text-base font-semibold">{children}</h2>
+      <h2 className="font-heading text-xl tracking-wide">{children}</h2>
       {accion}
     </div>
   );
@@ -91,7 +94,7 @@ export function Stepper({
             value={valor ?? ""}
             placeholder="—"
             onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value.replace(",", ".")))}
-            className="h-12 w-full min-w-0 rounded-2xl border border-input bg-background/40 text-center font-heading text-xl font-semibold tabular-nums outline-none focus:border-primary"
+            className="h-12 w-full min-w-0 rounded-2xl border border-input bg-background/40 text-center font-heading text-2xl tabular-nums outline-none focus:border-primary tracking-wide"
           />
           {sufijo && (
             <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -166,7 +169,7 @@ export function Stat({ etiqueta, valor, detalle, color = "primary" }: {
   return (
     <div className="rounded-2xl bg-secondary/50 p-3">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{etiqueta}</div>
-      <div className={cn("font-display text-2xl font-bold tabular-nums", colores[color])}>{valor}</div>
+      <div className={cn("font-display text-3xl tabular-nums", colores[color])}>{valor}</div>
       {detalle && <div className="text-xs text-muted-foreground">{detalle}</div>}
     </div>
   );

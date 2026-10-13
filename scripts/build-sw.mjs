@@ -18,7 +18,7 @@ async function listar(dir) {
 }
 
 const archivos = (await listar(OUT)).map((f) => "/" + path.relative(OUT, f).split(path.sep).join("/"));
-const esImagen = (f) => f.startsWith("/ejercicios/");
+const esImagen = (f) => f.startsWith("/ejercicios/") && f.endsWith(".webp");
 const esSplash = (f) => f.startsWith("/icons/splash-");
 const precache = archivos
   // HTML, JS, CSS, fuentes, iconos y payloads RSC (.txt) para navegar sin conexión.

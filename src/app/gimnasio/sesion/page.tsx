@@ -14,15 +14,16 @@ import {
   Pencil,
   Plus,
   ShieldAlert,
-  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
+import { Kakugan } from "@/components/kakugan";
 import { NotaEjercicio, TecnicaSheet } from "@/components/exercise/technique";
 import { SustituirDialog } from "@/components/gym/sustituir-dialog";
+import { FlashSangre } from "@/components/flash-sangre";
 import { RestTimer, type Descanso } from "@/components/rest-timer";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -59,7 +60,7 @@ function pendientes(ej: WorkoutExercise) {
   return ej.series.filter((s) => !s.hecho).length;
 }
 
-function usarWakeLock() {
+function useWakeLock() {
   useEffect(() => {
     type WL = { release: () => Promise<void> };
     let lock: WL | null = null;
@@ -88,38 +89,21 @@ function Sesion() {
   const todos = useWorkouts();
   const perfil = usePerfil();
   const ajustes = useAjustes();
-  const [idx, setIdx] = useState<number | null>(null);
+  const [idxElegido, setIdx] = useState<number | null>(null);
   const [editando, setEditando] = useState<number | null>(null);
-  const [borrador, setBorrador] = useState<Pick<WorkoutSet, "pesoKg" | "reps" | "rir">>({ pesoKg: null, reps: null, rir: null });
   const [descanso, setDescanso] = useState<Descanso | null>(null);
   const [destino, setDestino] = useState<number | null>(null);
   const [tecnica, setTecnica] = useState<string | null>(null);
   const [sustituir, setSustituir] = useState(false);
   const [verNotas, setVerNotas] = useState(false);
-  usarWakeLock();
+  const [flash, setFlash] = useState(0);
+  useWakeLock();
 
-  // Ejercicio inicial: el primero con series pendientes.
-  useEffect(() => {
-    if (!workout || idx !== null) return;
-    const i = workout.ejercicios.findIndex((e) => pendientes(e) > 0);
-    setIdx(i >= 0 ? i : 0);
-  }, [workout, idx]);
-
-  const ej = workout && idx !== null ? workout.ejercicios[idx] : undefined;
+  // Mientras no se elija, el ejercicio actual es el primero con series pendientes.
+  const primero = workout ? Math.max(0, workout.ejercicios.findIndex((e) => pendientes(e) > 0)) : 0;
+  const idxActual = idxElegido ?? primero;
+  const ej = workout ? workout.ejercicios[idxActual] : undefined;
   const serieActiva = editando ?? (ej ? ej.series.findIndex((s) => !s.hecho) : -1);
-
-  // Cargar el borrador de la serie activa (objetivo o lo ya anotado).
-  useEffect(() => {
-    if (!ej || serieActiva < 0) return;
-    const s = ej.series[serieActiva];
-    if (!s) return;
-    setBorrador({
-      pesoKg: s.hecho ? s.pesoKg : s.pesoKg ?? s.objetivoPeso,
-      reps: s.hecho ? s.reps : s.reps ?? s.objetivoReps,
-      rir: s.rir,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ej?.exerciseId, serieActiva, idx]);
 
   const finDescanso = useCallback(() => {
     setDescanso(null);
@@ -136,10 +120,11 @@ function Sesion() {
   );
 
   if (!id) return <Aviso>Sesión no encontrada.</Aviso>;
-  if (workout === undefined || !perfil || !ajustes || idx === null) return <Cargando />;
+  if (workout === undefined || !perfil || !ajustes) return <Cargando />;
   if (workout === null) return <Aviso>Sesión no encontrada.</Aviso>;
   if (workout.estado === "completado") return <Resumen workout={workout} previos={previos} />;
   if (!ej) return <Cargando />;
+  const idx = idxActual;
 
   const e = ejercicio(ej.exerciseId);
   const total = workout.ejercicios.reduce((t, x) => t + x.series.length, 0);
@@ -150,8 +135,8 @@ function Sesion() {
     ? workout.ejercicios.findIndex((x, i) => i !== idx && x.biserie === ej.biserie)
     : -1;
 
-  async function serieHecha() {
-    if (!workout || idx === null || serieActiva < 0) return;
+  async function serieHecha(borrador: Borrador) {
+    if (!workout || serieActiva < 0) return;
     const s = serieActiva;
     const yaEstaba = ej!.series[s].hecho;
     const incr = incrementoPara(e.tipoCarga, ajustes!.incrementos);
@@ -174,6 +159,7 @@ function Sesion() {
       siguiente = w;
     });
     setEditando(null);
+    if (!yaEstaba) setFlash((f) => f + 1);
     if (yaEstaba || !siguiente) return;
     const w = siguiente as Workout;
     const actual = w.ejercicios[idx];
@@ -304,7 +290,7 @@ function Sesion() {
                   Ejercicio {idx + 1} de {workout.ejercicios.length}
                   {ej.biserie && <span className="ml-1 font-semibold text-violet">· Biserie {ej.biserie}</span>}
                 </p>
-                <h1 className="font-heading text-lg font-semibold leading-tight">{e.nombre}</h1>
+                <h1 className="font-heading text-2xl leading-tight tracking-wide">{e.nombre}</h1>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {ej.repsMin}–{ej.repsMax} {e.medida === "segundos" ? "s" : "reps"} · RIR {ej.rir} · descanso {ej.descansoSeg}s
                 </p>
@@ -350,54 +336,15 @@ function Sesion() {
               return (
                 <li key={i}>
                   {activa ? (
-                    <Glass className="space-y-4 neon-border">
-                      <div className="flex items-baseline justify-between">
-                        <p className="font-heading font-semibold">Serie {i + 1}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Objetivo:{" "}
-                          <strong className="text-foreground">
-                            {s.objetivoPeso != null && `${s.objetivoPeso} kg × `}
-                            {s.objetivoReps} {e.medida === "segundos" ? "s" : "reps"}
-                          </strong>
-                        </p>
-                      </div>
-                      {conPeso && (
-                        <Stepper
-                          etiqueta="Peso"
-                          sufijo="kg"
-                          paso={paso}
-                          valor={borrador.pesoKg}
-                          onChange={(v) => setBorrador((b) => ({ ...b, pesoKg: v }))}
-                        />
-                      )}
-                      <Stepper
-                        etiqueta={e.medida === "segundos" ? "Segundos" : "Repeticiones"}
-                        paso={e.medida === "segundos" ? 5 : 1}
-                        decimales={0}
-                        valor={borrador.reps}
-                        onChange={(v) => setBorrador((b) => ({ ...b, reps: v }))}
-                      />
-                      <div>
-                        <p className="mb-1.5 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
-                          Reps en reserva (opcional)
-                        </p>
-                        <Chips<number>
-                          className="justify-center"
-                          valor={borrador.rir ?? -1}
-                          onChange={(v) => setBorrador((b) => ({ ...b, rir: b.rir === v ? null : (v as number) }))}
-                          opciones={[0, 1, 2, 3, 4].map((n) => ({ valor: n, etiqueta: n === 4 ? "4+" : String(n) }))}
-                        />
-                      </div>
-                      <motion.div whileTap={{ scale: 0.97 }}>
-                        <Button
-                          className="h-16 w-full rounded-2xl text-lg font-bold"
-                          disabled={borrador.reps == null}
-                          onClick={serieHecha}
-                        >
-                          <Check className="size-6" /> {s.hecho ? "Guardar cambios" : "Serie hecha"}
-                        </Button>
-                      </motion.div>
-                    </Glass>
+                    <SerieEditor
+                      key={`${idx}-${i}-${s.hecho}`}
+                      numero={i + 1}
+                      serie={s}
+                      medida={e.medida}
+                      conPeso={conPeso}
+                      paso={paso}
+                      onHecha={serieHecha}
+                    />
                   ) : (
                     <button
                       type="button"
@@ -484,6 +431,7 @@ function Sesion() {
         sonido={ajustes.sonido}
         vibracion={ajustes.vibracion}
       />
+      <FlashSangre disparo={flash} />
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
       <SustituirDialog
         exerciseId={sustituir ? e.id : null}
@@ -497,6 +445,77 @@ function Sesion() {
         }}
       />
     </div>
+  );
+}
+
+type Borrador = Pick<WorkoutSet, "pesoKg" | "reps" | "rir">;
+
+/** Editor de la serie activa: su estado arranca con el objetivo (o lo ya anotado). */
+function SerieEditor({
+  numero,
+  serie: s,
+  medida,
+  conPeso,
+  paso,
+  onHecha,
+}: {
+  numero: number;
+  serie: WorkoutSet;
+  medida: "reps" | "segundos";
+  conPeso: boolean;
+  paso: number;
+  onHecha: (b: Borrador) => void;
+}) {
+  const [borrador, setBorrador] = useState<Borrador>(() => ({
+    pesoKg: s.hecho ? s.pesoKg : (s.pesoKg ?? s.objetivoPeso),
+    reps: s.hecho ? s.reps : (s.reps ?? s.objetivoReps),
+    rir: s.rir,
+  }));
+  return (
+    <Glass className="space-y-4 neon-border">
+      <div className="flex items-baseline justify-between">
+        <p className="font-heading text-xl tracking-wide">Serie {numero}</p>
+        <p className="text-sm text-muted-foreground">
+          Objetivo:{" "}
+          <strong className="text-foreground">
+            {s.objetivoPeso != null && `${s.objetivoPeso} kg × `}
+            {s.objetivoReps} {medida === "segundos" ? "s" : "reps"}
+          </strong>
+        </p>
+      </div>
+      {conPeso && (
+        <Stepper
+          etiqueta="Peso"
+          sufijo="kg"
+          paso={paso}
+          valor={borrador.pesoKg}
+          onChange={(v) => setBorrador((b) => ({ ...b, pesoKg: v }))}
+        />
+      )}
+      <Stepper
+        etiqueta={medida === "segundos" ? "Segundos" : "Repeticiones"}
+        paso={medida === "segundos" ? 5 : 1}
+        decimales={0}
+        valor={borrador.reps}
+        onChange={(v) => setBorrador((b) => ({ ...b, reps: v }))}
+      />
+      <div>
+        <p className="mb-1.5 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
+          Reps en reserva (opcional)
+        </p>
+        <Chips<number>
+          className="justify-center"
+          valor={borrador.rir ?? -1}
+          onChange={(v) => setBorrador((b) => ({ ...b, rir: b.rir === v ? null : (v as number) }))}
+          opciones={[0, 1, 2, 3, 4].map((n) => ({ valor: n, etiqueta: n === 4 ? "4+" : String(n) }))}
+        />
+      </div>
+      <motion.div whileTap={{ scale: 0.97 }}>
+        <Button className="h-16 w-full rounded-2xl text-lg font-bold" disabled={borrador.reps == null} onClick={() => onHecha(borrador)}>
+          <Check className="size-6" /> {s.hecho ? "Guardar cambios" : "Serie hecha"}
+        </Button>
+      </motion.div>
+    </Glass>
   );
 }
 
@@ -522,10 +541,10 @@ function Resumen({ workout, previos }: { workout: Workout; previos: ReturnType<t
   return (
     <div className="space-y-4">
       <div className="pt-6 text-center">
-        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-grid size-20 place-items-center rounded-full bg-lime/15 neon-border">
-          <Trophy className="size-9 text-lime" />
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-grid size-20 place-items-center rounded-full bg-primary/10 neon-border">
+          <Kakugan className="h-10 w-16" />
         </motion.div>
-        <h1 className="mt-3 font-display text-2xl font-bold neon-text">¡Sesión completada!</h1>
+        <h1 className="glitch mt-3 font-display text-4xl text-primary" data-text="¡Sesión completada!">¡Sesión completada!</h1>
         <p className="text-sm text-muted-foreground">{workout.nombre}</p>
       </div>
       <div className="grid grid-cols-3 gap-2">

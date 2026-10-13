@@ -78,7 +78,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Imágenes de ejercicios: caché primero.
-  if (url.pathname.startsWith("/ejercicios/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.endsWith(".webp") || url.pathname.startsWith("/icons/")) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_IMG);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
+import { useMemo } from "react";
 import { ajustesPorDefecto } from "@/lib/domain/defaults";
 import type { Settings } from "@/lib/domain/types";
 import { db } from "./db";
@@ -19,9 +20,11 @@ export const useEvaluacionBrazo = () => useKv("evaluacionBrazo");
 /** Ajustes con valores por defecto para los campos que falten (versiones antiguas). */
 export function useAjustes(): Settings | undefined {
   const a = useKv("ajustes");
-  if (a === undefined) return undefined;
-  const base = ajustesPorDefecto();
-  return a ? { ...base, ...a, incrementos: { ...base.incrementos, ...a.incrementos } } : base;
+  return useMemo(() => {
+    if (a === undefined) return undefined;
+    const base = ajustesPorDefecto();
+    return a ? { ...base, ...a, incrementos: { ...base.incrementos, ...a.incrementos } } : base;
+  }, [a]);
 }
 
 export function useWorkouts(): Workout[] | undefined {

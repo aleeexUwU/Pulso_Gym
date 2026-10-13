@@ -34,22 +34,24 @@ export function MusculosBadges({ ejercicio }: { ejercicio: Exercise }) {
 /** Nota persistente por ejercicio (p. ej. "asiento en el 4"). Se guarda al escribir. */
 export function NotaEjercicio({ exerciseId }: { exerciseId: string }) {
   const nota = useNota(exerciseId);
-  const [texto, setTexto] = useState<string | null>(null);
+  if (nota === undefined) return null;
+  return <EditorNota key={exerciseId} exerciseId={exerciseId} inicial={nota?.texto ?? ""} />;
+}
+
+function EditorNota({ exerciseId, inicial }: { exerciseId: string; inicial: string }) {
+  const [texto, setTexto] = useState(inicial);
   useEffect(() => {
-    if (nota !== undefined && texto === null) setTexto(nota?.texto ?? "");
-  }, [nota, texto]);
-  useEffect(() => {
-    if (texto === null || texto === (nota?.texto ?? "")) return;
+    if (texto === inicial) return;
     const t = setTimeout(() => void guardar<ExerciseNote>("notas", { id: exerciseId, texto }), 500);
     return () => clearTimeout(t);
-  }, [texto, nota, exerciseId]);
+  }, [texto, inicial, exerciseId]);
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center gap-1.5 text-sm font-medium">
         <NotebookPen className="size-4 text-violet" /> Mis notas
       </span>
       <Textarea
-        value={texto ?? ""}
+        value={texto}
         onChange={(e) => setTexto(e.target.value)}
         placeholder="Ajustes de la máquina, sensaciones, recordatorios…"
         className="min-h-20 rounded-2xl"
@@ -136,7 +138,7 @@ export function TecnicaSheet({
         {e && (
           <>
             <SheetHeader className="px-0">
-              <SheetTitle className="font-heading text-lg">{e.nombre}</SheetTitle>
+              <SheetTitle className="font-heading text-2xl tracking-wide">{e.nombre}</SheetTitle>
               <SheetDescription>Técnica, errores y adaptación</SheetDescription>
             </SheetHeader>
             <TecnicaContenido ejercicio={e} />

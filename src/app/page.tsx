@@ -114,7 +114,7 @@ export default function Gimnasio() {
       {enCurso && (
         <Glass className="neon-border">
           <p className="text-sm text-muted-foreground">Sesión en curso</p>
-          <p className="font-heading text-lg font-semibold">{enCurso.nombre}</p>
+          <p className="font-heading text-2xl tracking-wide">{enCurso.nombre}</p>
           <Button asChild className="mt-3 h-14 w-full rounded-2xl text-base font-semibold">
             <Link href={`/gimnasio/sesion/?id=${enCurso.id}`}>
               <Play /> Continuar
@@ -128,7 +128,7 @@ export default function Gimnasio() {
           <p className="text-sm text-muted-foreground">
             {diaHoy ? (hechoHoy ? "Hoy · ¡hecho! 💪" : "Hoy toca") : `Próximo: ${NOMBRE_DIA[proximo.diaSemana]}`}
           </p>
-          <p className="font-heading text-xl font-semibold">{proximo.nombre}</p>
+          <p className="font-heading text-2xl tracking-wide">{proximo.nombre}</p>
           <p className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
             <span>{proximo.ejercicios.length} ejercicios</span>
             <span className="flex items-center gap-1">
@@ -227,7 +227,7 @@ export default function Gimnasio() {
                 >
                   <span>
                     <span className="block text-xs uppercase tracking-wider text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
-                    <span className="block font-heading font-semibold">{d.nombre}</span>
+                    <span className="block font-heading text-xl tracking-wide">{d.nombre}</span>
                     <span className="block text-xs text-muted-foreground">
                       {d.ejercicios.length} ejercicios · {d.ejercicios.reduce((t, e) => t + e.series, 0)} series · ~
                       {d.duracionEstimadaMin} min

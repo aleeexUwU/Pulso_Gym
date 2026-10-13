@@ -11,7 +11,7 @@ const out = (f) => path.join(RAIZ, "public/icons", f);
 for (const s of [192, 512]) await sharp(svg).resize(s, s).png().toFile(out(`icon-${s}.png`));
 // Maskable: el contenido dentro de la zona segura (80 %) sobre fondo sólido.
 const interior = await sharp(svg).resize(410, 410).png().toBuffer();
-await sharp({ create: { width: 512, height: 512, channels: 4, background: "#06060b" } })
+await sharp({ create: { width: 512, height: 512, channels: 4, background: "#0b0909" } })
   .composite([{ input: interior, gravity: "center" }])
   .png()
   .toFile(out("maskable-512.png"));
@@ -24,7 +24,7 @@ const splash = [
 ];
 for (const [w, h] of splash) {
   const logo = await sharp(svg).resize(Math.round(w * 0.32)).png().toBuffer();
-  await sharp({ create: { width: w, height: h, channels: 4, background: "#06060b" } })
+  await sharp({ create: { width: w, height: h, channels: 4, background: "#0b0909" } })
     .composite([{ input: logo, gravity: "center" }])
     .png({ compressionLevel: 9 })
     .toFile(out(`splash-${w}x${h}.png`));

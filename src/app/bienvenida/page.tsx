@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Logo } from "@/components/kakugan";
 import { Aviso, Chips, Glass } from "@/components/ui-kit";
 import { entradaGenerador } from "@/lib/app/planificacion";
 import { escribirKv } from "@/lib/db/repo";
@@ -66,7 +67,7 @@ export default function Bienvenida() {
     <div className="flex min-h-[calc(100dvh-2rem)] flex-col">
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <span className="font-display text-xl font-bold neon-text">PULSO</span>
+          <Logo />
           <span className="text-xs text-muted-foreground">
             Paso {paso + 1} de {PASOS.length}
           </span>
@@ -77,7 +78,7 @@ export default function Bienvenida() {
             animate={{ width: `${((paso + 1) / PASOS.length) * 100}%` }}
           />
         </div>
-        <h1 className="mt-4 font-heading text-2xl font-semibold">{PASOS[paso]}</h1>
+        <h1 className="mt-4 font-heading text-3xl tracking-wide">{PASOS[paso]}</h1>
       </div>
 
       <AnimatePresence mode="wait">

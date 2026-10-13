@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Orbitron, Space_Grotesk } from "next/font/google";
+import { Bebas_Neue, Inter, Nosifer } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const spaceGrotesk = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"], display: "swap" });
-const orbitron = Orbitron({ variable: "--font-orbitron", subsets: ["latin"], weight: ["500", "700", "800"], display: "swap" });
+// Títulos: Bebas Neue (afilada, con efecto glitch). Logo: Nosifer (solo el logotipo). Texto: Inter.
+const bebas = Bebas_Neue({ variable: "--font-bebas", subsets: ["latin", "latin-ext"], weight: "400", display: "swap" });
+const nosifer = Nosifer({ variable: "--font-nosifer", subsets: ["latin"], weight: "400", display: "swap" });
 
 const SPLASH: [number, number, number, number][] = [
   // [ancho px, alto px, ancho css, alto css] → media query de iOS
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0a14",
+  themeColor: "#120e0f",
   colorScheme: "dark light",
   width: "device-width",
   initialScale: 1,
@@ -56,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${orbitron.variable} dark`}
+      className={`${inter.variable} ${bebas.variable} ${nosifer.variable} dark`}
       suppressHydrationWarning
     >
       <body className="app-bg">

@@ -56,11 +56,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <WifiOff className="size-3.5" /> Sin conexión: todo se guarda en el móvil y se sincroniza después.
         </div>
       )}
-      <main className={cn("safe-top flex-1 px-4 pt-4", ocultarNav ? "pb-6" : "pb-28")}>{children}</main>
+      <main className={cn("safe-top flex-1 px-4 pt-4", ocultarNav ? "pb-6" : "pb-28")}>
+        <motion.div
+          key={ruta}
+          initial={{ opacity: 0, x: 10, skewX: -3 }}
+          animate={{ opacity: [0, 1, 0.7, 1], x: [10, -3, 2, 0], skewX: [-3, 2, 0, 0] }}
+          transition={{ duration: 0.32, times: [0, 0.4, 0.7, 1] }}
+        >
+          {children}
+        </motion.div>
+      </main>
       {!ocultarNav && perfil && (
         <nav
           aria-label="Navegación principal"
-          className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl rounded-t-3xl border-b-0 px-2 pt-2"
+          className="rasgado-arriba safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl bg-background/90 px-2 backdrop-blur-md"
         >
           <ul className="flex items-stretch justify-around">
             {items.map(({ href, label, icon: Icon, activo }) => (
@@ -76,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {activo && (
                     <motion.span
                       layoutId="nav-activo"
-                      className="absolute inset-x-2 inset-y-0.5 -z-10 rounded-2xl bg-primary/10 neon-border"
+                      className="absolute inset-x-2 inset-y-0.5 -z-10 rounded-[0.9rem_0.4rem_1rem_0.5rem] bg-primary/12 neon-border"
                       transition={{ type: "spring", stiffness: 500, damping: 40 }}
                     />
                   )}

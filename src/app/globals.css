@@ -4,12 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Estética emo / urbana oscura (inspiración libre, sin recursos oficiales de ninguna obra):
+ * negro y carbón, carmesí como acento, blanco hueso para el texto y morado oscuro.
+ * Nombres de tokens semánticos que usa el código:
+ *   --neon   → acento carmesí        --violet → morado oscuro
+ *   --lime   → hueso (hecho / éxito) --warn   → ámbar (avisos)
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-space-grotesk);
-  --font-display: var(--font-orbitron);
+  --font-heading: var(--font-bebas);
+  --font-display: var(--font-bebas);
+  --font-logo: var(--font-nosifer);
   --font-mono: ui-monospace, "SFMono-Regular", monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -45,70 +54,75 @@
   --radius-3xl: calc(var(--radius) * 2.2);
 }
 
-/* Claro (opcional). El tema por defecto es el oscuro. */
+/* Claro (opcional): papel hueso con tinta negra y carmesí. El tema por defecto es el oscuro. */
 :root {
-  --radius: 0.9rem;
-  --background: oklch(0.975 0.006 270);
-  --foreground: oklch(0.2 0.03 280);
-  --card: oklch(1 0 0 / 0.75);
-  --card-foreground: oklch(0.2 0.03 280);
-  --popover: oklch(0.99 0.004 270);
-  --popover-foreground: oklch(0.2 0.03 280);
-  --primary: oklch(0.58 0.14 215);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.93 0.02 280);
-  --secondary-foreground: oklch(0.25 0.04 280);
-  --muted: oklch(0.94 0.01 280);
-  --muted-foreground: oklch(0.48 0.03 280);
-  --accent: oklch(0.92 0.03 290);
-  --accent-foreground: oklch(0.25 0.05 290);
-  --destructive: oklch(0.58 0.22 25);
-  --border: oklch(0.2 0.03 280 / 0.12);
-  --input: oklch(0.2 0.03 280 / 0.16);
-  --ring: oklch(0.58 0.14 215);
-  --neon: oklch(0.58 0.14 215);
-  --violet: oklch(0.55 0.22 300);
-  --lime: oklch(0.6 0.17 135);
-  --warn: oklch(0.68 0.17 60);
-  --glass: oklch(1 0 0 / 0.6);
-  --chart-1: oklch(0.58 0.14 215);
-  --chart-2: oklch(0.55 0.22 300);
-  --chart-3: oklch(0.6 0.17 135);
-  --chart-4: oklch(0.68 0.17 60);
-  --chart-5: oklch(0.6 0.2 350);
+  --radius: 0.7rem;
+  --background: oklch(0.95 0.012 85);
+  --foreground: oklch(0.18 0.01 20);
+  --card: oklch(1 0 0 / 0.7);
+  --card-foreground: oklch(0.18 0.01 20);
+  --popover: oklch(0.97 0.01 85);
+  --popover-foreground: oklch(0.18 0.01 20);
+  --primary: oklch(0.5 0.2 25);
+  --primary-foreground: oklch(0.97 0.01 85);
+  --secondary: oklch(0.18 0.01 20 / 0.07);
+  --secondary-foreground: oklch(0.2 0.01 20);
+  --muted: oklch(0.18 0.01 20 / 0.06);
+  --muted-foreground: oklch(0.42 0.02 20);
+  --accent: oklch(0.5 0.2 25 / 0.12);
+  --accent-foreground: oklch(0.35 0.15 25);
+  --destructive: oklch(0.5 0.2 25);
+  --border: oklch(0.18 0.01 20 / 0.16);
+  --input: oklch(0.18 0.01 20 / 0.2);
+  --ring: oklch(0.5 0.2 25);
+  --neon: oklch(0.5 0.2 25);
+  --violet: oklch(0.42 0.14 305);
+  --lime: oklch(0.32 0.02 60);
+  --warn: oklch(0.55 0.13 70);
+  --glass: oklch(1 0 0 / 0.55);
+  /* Paleta categórica de gráficas validada (CVD y contraste) sobre #f3efe6. */
+  --chart-1: #c21d34;
+  --chart-2: #6a4fc9;
+  --chart-3: #a56a10;
+  --chart-4: oklch(0.55 0.13 70);
+  --chart-5: oklch(0.6 0.08 20);
   --glow: 0 0 0 transparent;
+  --textura-opacidad: 0.5;
 }
 
 .dark {
-  --background: oklch(0.12 0.018 285);
-  --foreground: oklch(0.96 0.01 260);
-  --card: oklch(1 0 0 / 0.045);
-  --card-foreground: oklch(0.96 0.01 260);
-  --popover: oklch(0.17 0.025 285);
-  --popover-foreground: oklch(0.96 0.01 260);
-  --primary: oklch(0.86 0.15 200);
-  --primary-foreground: oklch(0.15 0.03 260);
-  --secondary: oklch(1 0 0 / 0.07);
-  --secondary-foreground: oklch(0.96 0.01 260);
-  --muted: oklch(1 0 0 / 0.06);
-  --muted-foreground: oklch(0.72 0.03 270);
-  --accent: oklch(0.66 0.23 300 / 0.18);
-  --accent-foreground: oklch(0.92 0.06 300);
-  --destructive: oklch(0.68 0.2 22);
-  --border: oklch(1 0 0 / 0.09);
-  --input: oklch(1 0 0 / 0.12);
-  --ring: oklch(0.86 0.15 200);
-  --neon: oklch(0.86 0.15 200);
-  --violet: oklch(0.68 0.23 300);
-  --lime: oklch(0.92 0.2 128);
-  --warn: oklch(0.82 0.16 75);
-  --glass: oklch(1 0 0 / 0.05);
-  --chart-1: oklch(0.86 0.15 200);
-  --chart-2: oklch(0.68 0.23 300);
-  --chart-3: oklch(0.92 0.2 128);
-  --chart-4: oklch(0.82 0.16 75);
-  --chart-5: oklch(0.7 0.2 350);
-  --glow: 0 0 24px oklch(0.86 0.15 200 / 0.35);
+  --background: oklch(0.14 0.004 20);
+  --foreground: oklch(0.93 0.018 85);
+  --card: oklch(1 0 0 / 0.035);
+  --card-foreground: oklch(0.93 0.018 85);
+  --popover: oklch(0.18 0.006 20);
+  --popover-foreground: oklch(0.93 0.018 85);
+  /* Carmesí legible sobre negro (≥4,5:1 como texto); los botones llevan texto casi negro. */
+  --primary: oklch(0.64 0.22 25);
+  --primary-foreground: oklch(0.13 0.004 20);
+  --secondary: oklch(1 0 0 / 0.06);
+  --secondary-foreground: oklch(0.93 0.018 85);
+  --muted: oklch(1 0 0 / 0.05);
+  --muted-foreground: oklch(0.74 0.015 60);
+  --accent: oklch(0.64 0.22 25 / 0.14);
+  --accent-foreground: oklch(0.85 0.08 25);
+  --destructive: oklch(0.7 0.2 28);
+  --border: oklch(0.93 0.018 85 / 0.1);
+  --input: oklch(0.93 0.018 85 / 0.14);
+  --ring: oklch(0.64 0.22 25);
+  --neon: oklch(0.64 0.22 25);
+  --violet: oklch(0.58 0.16 305);
+  --lime: oklch(0.93 0.03 85);
+  --warn: oklch(0.82 0.14 78);
+  --glass: oklch(0.2 0.006 20 / 0.62);
+  /* Paleta categórica de gráficas validada (CVD y contraste) sobre #1b1617. */
+  --chart-1: #e8344a;
+  --chart-2: #8a6fe3;
+  --chart-3: #b87a17;
+  --chart-4: oklch(0.82 0.14 78);
+  --chart-5: oklch(0.45 0.16 25);
+  --glow: 0 0 22px oklch(0.64 0.22 25 / 0.28);
+  --textura-opacidad: 1;
 }
 
 @layer base {
@@ -128,7 +142,8 @@
   h1,
   h2,
   h3 {
-    @apply font-heading tracking-tight;
+    @apply font-heading;
+    letter-spacing: 0.03em;
   }
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
@@ -141,35 +156,179 @@
 }
 
 @layer components {
-  /* Fondo con brillos de neón muy sutiles. */
+  /*
+   * Fondo: ruido grunge + panal de hexágonos muy tenue + salpicaduras carmesí
+   * discretas en las esquinas + grietas finas. Todo en SVG en línea.
+   */
   .app-bg {
-    background:
-      radial-gradient(60rem 40rem at 110% -10%, oklch(0.68 0.23 300 / 0.13), transparent 60%),
-      radial-gradient(50rem 35rem at -20% 10%, oklch(0.86 0.15 200 / 0.1), transparent 60%),
-      var(--background);
+    background-color: var(--background);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' viewBox='0 0 520 520'%3E%3Cg fill='%23b3122b' fill-opacity='.16'%3E%3Ccircle cx='470' cy='40' r='38'/%3E%3Ccircle cx='418' cy='92' r='9'/%3E%3Ccircle cx='500' cy='118' r='6'/%3E%3Ccircle cx='392' cy='30' r='4'/%3E%3Ccircle cx='445' cy='140' r='3'/%3E%3Cpath d='M470 78c-6 30-2 52 3 80 2 10-8 10-8 0-1-24-6-50 5-80z'/%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='none' stroke='%23efe6d2' stroke-opacity='.06' stroke-width='1.2'%3E%3Cpath d='M0 300l60-14 22 30 48-40 30 12 40-60M82 316l-10 50 30 30M130 276l26 40-8 44'/%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23c4142f' stroke-opacity='.07' stroke-width='1'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(48rem 32rem at 110% -10%, oklch(0.45 0.18 25 / 0.22), transparent 60%),
+      radial-gradient(40rem 30rem at -20% 105%, oklch(0.35 0.14 305 / 0.2), transparent 60%);
+    background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat, no-repeat;
+    background-position: top right, bottom left, center, center, center, center;
     background-attachment: fixed;
   }
+  :root:not(.dark) .app-bg {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23a01025' stroke-opacity='.06' stroke-width='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /* Tarjeta de "cristal ahumado" con borde irregular, como hecho a mano. */
   .glass {
     background: var(--glass);
     border: 1px solid var(--border);
-    backdrop-filter: blur(14px) saturate(1.2);
-    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border-radius: 1.35rem 0.55rem 1.5rem 0.7rem / 0.8rem 1.4rem 0.6rem 1.3rem;
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.04);
   }
+
+  /* Texto con degradado sangre → morado. */
   .neon-text {
-    background: linear-gradient(90deg, var(--neon), var(--violet));
+    background: linear-gradient(95deg, var(--lime) 0%, var(--neon) 45%, var(--violet) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .neon-border {
     box-shadow:
-      inset 0 0 0 1px oklch(0.86 0.15 200 / 0.35),
+      inset 0 0 0 1px oklch(0.64 0.22 25 / 0.45),
       var(--glow);
   }
+
+  /* Trazo de pincel rasgado bajo los títulos de página. */
+  .trazo-rasgado {
+    height: 7px;
+    background: var(--neon);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'%3E%3Cpath d='M0 4l6-3 9 2 7-2 12 3 8-3 10 4 9-3 14 2 6-3 11 3 9-2 13 3 7-4 10 3 12-2 8 3 9-3 14 2 6 2-8 2-12-1-9 2-14-2-10 2-8-1-13 2-9-2-12 1-7 2-11-2-9 1-6 2-12-2-10 1-8-1-12 2L0 6z'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'%3E%3Cpath d='M0 4l6-3 9 2 7-2 12 3 8-3 10 4 9-3 14 2 6-3 11 3 9-2 13 3 7-4 10 3 12-2 8 3 9-3 14 2 6 2-8 2-12-1-9 2-14-2-10 2-8-1-13 2-9-2-12 1-7 2-11-2-9 1-6 2-12-2-10 1-8-1-12 2L0 6z'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+  }
+
+  /* Borde superior rasgado (barra de navegación y temporizador). */
+  .rasgado-arriba {
+    -webkit-mask:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 6V3l4-2 5 2 6-3 4 3 7-2 5 2 6-2 5 3 7-3 5 2 6-1 5 2 6-3 5 3 7-2 4 2 6-2 7 3V6z'/%3E%3C/svg%3E")
+        top / 100% 10px no-repeat,
+      linear-gradient(#000, #000) 0 10px / 100% calc(100% - 10px) no-repeat;
+    mask:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 6V3l4-2 5 2 6-3 4 3 7-2 5 2 6-2 5 3 7-3 5 2 6-1 5 2 6-3 5 3 7-2 4 2 6-2 7 3V6z'/%3E%3C/svg%3E")
+        top / 100% 10px no-repeat,
+      linear-gradient(#000, #000) 0 10px / 100% calc(100% - 10px) no-repeat;
+    padding-top: 0.9rem;
+  }
+
+  /* Rayado para estados "corto": no depende solo del color. */
+  .rayado {
+    background-image: repeating-linear-gradient(135deg, currentColor 0 4px, transparent 4px 8px);
+  }
+
   .safe-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
   }
   .safe-top {
     padding-top: env(safe-area-inset-top);
+  }
+
+  /* ── Glitch ── */
+  .glitch {
+    position: relative;
+    display: inline-block;
+  }
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .glitch::before {
+    color: var(--neon);
+    -webkit-text-fill-color: var(--neon);
+    animation: glitch-a 0.7s steps(2, end) 0.15s 1 both;
+  }
+  .glitch::after {
+    color: var(--violet);
+    -webkit-text-fill-color: var(--violet);
+    animation: glitch-b 0.7s steps(2, end) 0.15s 1 both;
+  }
+  .glitch-loop::before {
+    animation: glitch-a 0.6s steps(2, end) 3s infinite;
+  }
+  .glitch-loop::after {
+    animation: glitch-b 0.6s steps(2, end) 3s infinite;
+  }
+
+  /* Destello rojo al completar una serie o un ejercicio. */
+  .flash-sangre {
+    animation: flash-sangre 0.55s ease-out 1 both;
+  }
+  /* Parpadeo del temporizador en los últimos segundos. */
+  .parpadeo {
+    animation: parpadeo 1s steps(2, end) infinite;
+  }
+}
+
+.ojo-parpado {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: parpado 7s ease-in-out infinite;
+}
+@keyframes parpado {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.06); }
+}
+
+@keyframes glitch-a {
+  0% { opacity: 0.85; transform: translate(-3px, 1px); clip-path: inset(10% 0 60% 0); }
+  25% { transform: translate(3px, -1px); clip-path: inset(55% 0 15% 0); }
+  50% { transform: translate(-2px, 0); clip-path: inset(30% 0 40% 0); }
+  75% { transform: translate(2px, 1px); clip-path: inset(70% 0 5% 0); }
+  100% { opacity: 0; transform: none; clip-path: inset(0 0 100% 0); }
+}
+@keyframes glitch-b {
+  0% { opacity: 0.75; transform: translate(3px, -1px); clip-path: inset(65% 0 10% 0); }
+  25% { transform: translate(-3px, 1px); clip-path: inset(5% 0 70% 0); }
+  50% { transform: translate(2px, 0); clip-path: inset(40% 0 35% 0); }
+  75% { transform: translate(-2px, -1px); clip-path: inset(15% 0 60% 0); }
+  100% { opacity: 0; transform: none; clip-path: inset(0 0 100% 0); }
+}
+@keyframes flash-sangre {
+  0% { opacity: 0; }
+  12% { opacity: 1; transform: translateX(-2px); }
+  24% { opacity: 0.35; transform: translateX(2px); }
+  36% { opacity: 0.8; transform: none; }
+  100% { opacity: 0; }
+}
+@keyframes parpadeo {
+  0%, 100% { opacity: 1; text-shadow: 0 0 18px oklch(0.64 0.22 25 / 0.7); }
+  50% { opacity: 0.55; text-shadow: none; }
+}
+
+/* Movimiento reducido: sin glitch, destellos ni parpadeos. */
+@media (prefers-reduced-motion: reduce) {
+  .glitch::before,
+  .glitch::after,
+  .flash-sangre,
+  .parpadeo,
+  .ojo-parpado {
+    animation: none !important;
+  }
+  .flash-sangre {
+    opacity: 0 !important;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
