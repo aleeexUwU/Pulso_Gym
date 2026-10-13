@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, HeartPulse, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/kakugan";
+import { Landing } from "@/components/landing";
 import { Aviso, Chips, Glass } from "@/components/ui-kit";
 import { entradaGenerador } from "@/lib/app/planificacion";
+import { usePerfil } from "@/lib/db/hooks";
 import { escribirKv } from "@/lib/db/repo";
 import { NOMBRE_DIA_CORTO, SEMANA_LUNES } from "@/lib/domain/dates";
 import { ajustesPorDefecto, perfilPorDefecto } from "@/lib/domain/defaults";
@@ -34,6 +36,8 @@ const PRESETS: { nombre: string; equipo: Equipment[] }[] = [
 
 export default function Bienvenida() {
   const router = useRouter();
+  const perfilGuardado = usePerfil();
+  const [empezado, setEmpezado] = useState(false);
   const [paso, setPaso] = useState(0);
   const [p, setP] = useState<Profile>(() => perfilPorDefecto());
   const [guardando, setGuardando] = useState(false);
@@ -62,6 +66,13 @@ export default function Bienvenida() {
       setGuardando(false);
     }
   }
+
+  // Si al entrar con tu cuenta se descarga un perfil, directo a la app.
+  useEffect(() => {
+    if (perfilGuardado) router.replace("/");
+  }, [perfilGuardado, router]);
+
+  if (!empezado) return <Landing onEmpezar={() => setEmpezado(true)} />;
 
   return (
     <div className="flex min-h-[calc(100dvh-2rem)] flex-col">

@@ -97,12 +97,23 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
         setFuente("ia-foto");
         setSinReconocer([]);
       } else if (usarIA && ia?.ok) {
-        const r = await analizarConIA({ texto });
-        setItems(r.items);
-        setDescripcion(r.descripcion);
-        setNotasIA(r.notas);
-        setFuente("ia-texto");
-        setSinReconocer([]);
+        try {
+          const r = await analizarConIA({ texto });
+          setItems(r.items);
+          setDescripcion(r.descripcion);
+          setNotasIA(r.notas);
+          setFuente("ia-texto");
+          setSinReconocer([]);
+        } catch (e) {
+          // Si la IA falla, no te quedas sin nada: se usa la tabla de alimentos del móvil.
+          const r = analizarTexto(texto);
+          setItems(r.items);
+          setDescripcion(texto);
+          setNotasIA("");
+          setFuente("texto");
+          setSinReconocer(r.sinReconocer);
+          toast.warning(`${e instanceof Error ? e.message : "La IA falló"} He usado la tabla de alimentos del móvil.`);
+        }
       } else {
         const r = analizarTexto(texto);
         setItems(r.items);

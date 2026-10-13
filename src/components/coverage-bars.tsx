@@ -57,7 +57,7 @@ export function CoverageBars({
       )}
       {BLOQUES.map((b) => (
         <div key={b.titulo}>
-          {!compacto && <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">{b.titulo}</h3>}
+          {!compacto && <h3 className="mb-2 text-xs text-muted-foreground">{b.titulo}</h3>}
           <ul className="space-y-1.5">
             {b.grupos.map((g) => {
               const v = total[g];

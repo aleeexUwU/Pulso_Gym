@@ -23,6 +23,8 @@ import { TecnicaSheet } from "@/components/exercise/technique";
 import { SustituirDialog } from "@/components/gym/sustituir-dialog";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
+import { Logo } from "@/components/kakugan";
+import { ResumenHoy } from "@/components/resumen-hoy";
 import { WeekStrip } from "@/components/week-strip";
 import { enDescarga, iniciarWorkout, logsDeWorkouts, semanaPrograma } from "@/lib/app/gimnasio";
 import {
@@ -34,7 +36,7 @@ import {
 } from "@/lib/app/planificacion";
 import { clavesHechas } from "@/lib/app/resumen";
 import { useAbsSessions, useAjustes, useArmSessions, useEvaluacionBrazo, usePerfil, usePlan, useWorkouts } from "@/lib/db/hooks";
-import { diaSemana, hoyISO, inicioSemana, NOMBRE_DIA, sumarDias } from "@/lib/domain/dates";
+import { diaSemana, formatoFecha, hoyISO, inicioSemana, NOMBRE_DIA, sumarDias } from "@/lib/domain/dates";
 import { ejercicio } from "@/lib/domain/exercises";
 import { evaluarDescarga } from "@/lib/domain/progression";
 import type { PlanDay } from "@/lib/domain/types";
@@ -92,22 +94,31 @@ export default function Gimnasio() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        titulo="Gimnasio"
-        subtitulo={
-          <>
-            {perfil.nombre ? `Hola, ${perfil.nombre} · ` : ""}Semana {semanas + 1}
-            {semanas === 0 && " · calibración"}
-          </>
-        }
-        accion={
-          <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
-            <Link href="/ejercicios/">
-              <BookOpen />
-            </Link>
-          </Button>
-        }
-      />
+      <header className="flex items-center justify-between">
+        <Logo />
+        <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
+          <Link href="/ejercicios/">
+            <BookOpen />
+          </Link>
+        </Button>
+      </header>
+
+      <div>
+        <p className="text-sm text-muted-foreground">
+          {(() => {
+            const f = formatoFecha(hoy, { weekday: "long", day: "numeric", month: "long" });
+            return f.charAt(0).toUpperCase() + f.slice(1);
+          })()}
+        </p>
+        <h1 className="glitch font-display text-5xl leading-none" data-text={perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}>
+          {perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Semana {semanas + 1} de entreno{semanas === 0 && ": calibrando tus pesos"}
+        </p>
+      </div>
+
+      <ResumenHoy />
 
       <WeekStrip desde={lunes} actividades={actividades} hechas={hechas} />
 
@@ -226,7 +237,7 @@ export default function Gimnasio() {
                   onClick={() => setAbierto(open ? null : d.id)}
                 >
                   <span>
-                    <span className="block text-xs uppercase tracking-wider text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
+                    <span className="block text-xs text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
                     <span className="block font-heading text-xl tracking-wide">{d.nombre}</span>
                     <span className="block text-xs text-muted-foreground">
                       {d.ejercicios.length} ejercicios · {d.ejercicios.reduce((t, e) => t + e.series, 0)} series · ~

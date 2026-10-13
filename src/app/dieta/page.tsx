@@ -110,7 +110,7 @@ function Dieta() {
       <Glass className="space-y-4">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Calorías</p>
+            <p className="text-xs text-muted-foreground">Calorías</p>
             <p className="font-display text-5xl tabular-nums text-primary">{Math.round(t.kcal)}</p>
           </div>
           <p className="pb-1 text-right text-sm text-muted-foreground">
@@ -164,7 +164,7 @@ function Dieta() {
           if (lista.length === 0) return null;
           return (
             <div key={valor} className="space-y-2">
-              <h3 className="text-xs uppercase tracking-wider text-muted-foreground">{etiqueta}</h3>
+              <h3 className="text-xs text-muted-foreground">{etiqueta}</h3>
               {lista.map((c) => {
                 const tc = totales([c]);
                 return (

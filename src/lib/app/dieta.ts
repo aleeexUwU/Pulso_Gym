@@ -58,6 +58,7 @@ interface RespuestaIA {
   descripcion: string;
   items: Omit<ItemComida, "por100" | "alimentoId">[];
   notas: string;
+  proveedor?: string;
   error?: string;
 }
 
@@ -83,13 +84,19 @@ export async function analizarConIA(entrada: { texto?: string; imagenBase64?: st
     throw new Error(mensaje);
   }
   if (!data) throw new Error("Respuesta vacía de la IA.");
-  if (!data.es_comida) throw new Error("No he visto comida en la imagen. Prueba otra foto o descríbelo.");
+  if (data.items.length === 0 || (!data.es_comida && entrada.imagenBase64)) {
+    throw new Error(
+      entrada.imagenBase64
+        ? "No he visto comida en la imagen. Prueba otra foto o descríbelo."
+        : "La IA no ha reconocido ningún alimento en el texto.",
+    );
+  }
   const items: ItemComida[] = data.items.map((it) => ({
     ...it,
     gramos: Math.max(1, Math.round(it.gramos)),
     por100: it.gramos > 0 ? nutrientesDe(it, (100 / it.gramos) * 100) : undefined,
   }));
-  return { items, descripcion: data.descripcion, notas: data.notas };
+  return { items, descripcion: data.descripcion, notas: data.proveedor ? `${data.notas} (Analizado con ${data.proveedor}.)` : data.notas };
 }
 
 export async function guardarComida(c: Omit<Comida, "updatedAt" | "_dirty" | "id"> & { id?: string }, foto?: Blob): Promise<void> {

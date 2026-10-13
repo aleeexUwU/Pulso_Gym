@@ -177,7 +177,7 @@ export default function SesionAbdominales() {
         >
           {paso.tipo === "descanso" ? (
             <Glass className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-              <p className="text-sm uppercase tracking-widest text-muted-foreground">Descanso</p>
+              <p className="text-sm text-muted-foreground">Descanso</p>
               <p className="font-display text-8xl tabular-nums text-primary">
                 <span key={restante <= 3 ? restante : "normal"} className={cn("inline-block", restante <= 3 && "latido")}>
                   {restante}
@@ -192,7 +192,7 @@ export default function SesionAbdominales() {
                   <ExerciseImage ejercicio={ejercicio(item.exerciseId)} className="aspect-[4/3] w-full" />
                 </button>
                 <div className="text-center">
-                  <p className="text-xs uppercase tracking-widest text-primary">{CATEGORIA_NOMBRE[item.categoria]}</p>
+                  <p className="text-xs text-primary">{CATEGORIA_NOMBRE[item.categoria]}</p>
                   <h1 className="font-heading text-2xl tracking-wide">{ejercicio(item.exerciseId).nombre}</h1>
                   <p className="text-sm text-muted-foreground">
                     Serie {paso.serie + 1} de {item.series}

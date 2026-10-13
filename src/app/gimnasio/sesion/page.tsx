@@ -501,7 +501,7 @@ function SerieEditor({
         onChange={(v) => setBorrador((b) => ({ ...b, reps: v }))}
       />
       <div>
-        <p className="mb-1.5 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
+        <p className="mb-1.5 text-center text-[11px] text-muted-foreground">
           Reps en reserva (opcional)
         </p>
         <Chips<number>

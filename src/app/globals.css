@@ -290,6 +290,17 @@
   }
 }
 
+/* Portada: el ojo se abre una sola vez al cargar. */
+.ojo-abrir {
+  transform-origin: center;
+  animation: abrir-ojo 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s both;
+}
+@keyframes abrir-ojo {
+  0% { transform: scaleY(0.04); opacity: 0.3; }
+  60% { transform: scaleY(1.06); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
 .ojo-parpado {
   transform-box: fill-box;
   transform-origin: center;
@@ -336,6 +347,7 @@
   .glitch::after,
   .flash-sangre,
   .latido,
+  .ojo-abrir,
   .ojo-parpado {
     animation: none !important;
   }

@@ -75,7 +75,7 @@ export function Stepper({
   const fijar = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v * 10 ** decimales) / 10 ** decimales)));
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-center text-[11px] uppercase tracking-wider text-muted-foreground">{etiqueta}</span>
+      <span className="text-center text-[11px] text-muted-foreground">{etiqueta}</span>
       <div className="flex items-center gap-1">
         <motion.button
           type="button"
@@ -168,7 +168,7 @@ export function Stat({ etiqueta, valor, detalle, color = "primary" }: {
   const colores = { primary: "text-primary", violet: "text-violet", lime: "text-lime", warn: "text-warn" };
   return (
     <div className="rounded-2xl bg-secondary/50 p-3">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{etiqueta}</div>
+      <div className="text-[11px] text-muted-foreground">{etiqueta}</div>
       <div className={cn("font-display text-3xl tabular-nums", colores[color])}>{valor}</div>
       {detalle && <div className="text-xs text-muted-foreground">{detalle}</div>}
     </div>

@@ -53,7 +53,8 @@ const SISTEMA = `Eres un dietista-nutricionista que estima el contenido nutricio
 - Usa valores de composición estándar (tablas tipo BEDCA/USDA) y calcula los nutrientes para la cantidad estimada, no por 100 g. proteinas, carbohidratos, grasas, fibra, azucares y sal en gramos.
 - Si una etiqueta nutricional es legible, úsala y marca confianza alta.
 - Sé realista: no infles ni rebajes. Marca confianza baja cuando la cantidad sea muy incierta.
-- Si no hay comida ni bebida, devuelve es_comida=false e items vacío.
+- Si te dan una FOTO sin comida ni bebida, devuelve es_comida=false e items vacío.
+- Si te dan un TEXTO, el usuario te está contando lo que ha comido: es_comida=true siempre que mencione algún alimento o bebida (aunque sea de forma informal, con faltas o sin cantidades). Interpreta expresiones como "un plato de", "un puñado", "medio bocadillo", marcas o platos caseros.
 - descripcion: resumen breve del plato. notas: supuestos hechos (ración, aceite...) en una o dos frases.
 Responde en español.`;
 
@@ -191,8 +192,8 @@ Deno.serve(async (req) => {
   }
   const imagen = data ? { data, tipo } : undefined;
   const prompt = imagen
-    ? `Estima los nutrientes de esta comida.${texto ? ` Contexto del usuario: ${texto}` : ""}`
-    : `Estima los nutrientes de esto que he comido: ${texto}`;
+    ? `FOTO. Estima los nutrientes de esta comida.${texto ? ` Contexto del usuario: ${texto}` : ""}`
+    : `TEXTO. Esto es lo que he comido (desglósalo en alimentos con sus gramos estimados): ${texto}`;
 
   // 3) Gemini primero (gratis); Claude Haiku si no hay clave o Gemini falla.
   const claveGemini = Deno.env.get("GEMINI_API_KEY");
@@ -200,10 +201,16 @@ Deno.serve(async (req) => {
   const forzado = Deno.env.get("PROVEEDOR_IA");
   if (!claveGemini && !hayClaude) return respuesta({ error: "Falta GEMINI_API_KEY o ANTHROPIC_API_KEY en los secretos." }, 500);
 
+  const normalizar = (r: Resultado): Resultado => (!imagen && r.items.length > 0 ? { ...r, es_comida: true } : r);
+  const vacio = (r: Resultado) => r.items.length === 0;
+
   let avisoGemini: string | null = null;
   if (claveGemini && forzado !== "claude") {
     try {
-      return respuesta({ ...(await conGemini(claveGemini, prompt, imagen)), proveedor: "Gemini" });
+      const r = normalizar(await conGemini(claveGemini, prompt, imagen));
+      // Con texto, si Gemini no ha sacado ningún alimento, se intenta con Claude.
+      if (!(vacio(r) && !imagen && hayClaude)) return respuesta({ ...r, proveedor: "Gemini" });
+      avisoGemini = "Gemini no reconoció el texto";
     } catch (e) {
       const err = e instanceof ErrorProveedor ? e : new ErrorProveedor("Error inesperado con Gemini", 500, true);
       if (!hayClaude || !err.reintentable || forzado === "gemini") return respuesta({ error: `No se pudo analizar: ${err.message}.` }, err.status);
@@ -211,7 +218,7 @@ Deno.serve(async (req) => {
     }
   }
   try {
-    const r = await conClaude(prompt, imagen);
+    const r = normalizar(await conClaude(prompt, imagen));
     return respuesta({ ...r, proveedor: avisoGemini ? `Claude Haiku (${avisoGemini})` : "Claude Haiku" });
   } catch (e) {
     const err = e instanceof ErrorProveedor ? e : new ErrorProveedor("Error inesperado", 500, false);
