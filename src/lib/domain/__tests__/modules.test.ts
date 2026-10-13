@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATEGORIAS_CORE, resolverProgresion, rutinaAbdominales } from "../abs-routine";
+import { resolverProgresion, rutinaAbdominales } from "../abs-routine";
 import { sumarDias } from "../dates";
 import { ajustesPorDefecto, perfilPorDefecto } from "../defaults";
 import { EJERCICIOS_ABDOMINALES, ejercicio } from "../exercises";
@@ -9,7 +9,8 @@ import type { FiltroEjercicios } from "../limitations";
 import { mejorRacha, planSemanal, racha } from "../weekly-plan";
 
 const LUNES = "2026-10-12";
-const filtroCasa: FiltroEjercicios = { equipo: [], limitaciones: ["mano_izquierda"], excluidos: [] };
+// Como en la app: plancha sobre antebrazos permitida salvo que la autoevaluación diga que no.
+const filtroCasa: FiltroEjercicios = { equipo: [], limitaciones: ["mano_izquierda"], excluidos: [], permiteApoyoAntebrazoIzq: true };
 
 function idsEn28Dias(filtro: FiltroEjercicios): Set<string> {
   const ids = new Set<string>();
@@ -55,48 +56,63 @@ describe("módulo brazo izquierdo", () => {
 });
 
 describe("módulo abdominales", () => {
-  it("cada día trabaja recto, oblicuos, transverso y lumbar en 8–16 min", () => {
-    for (let i = 0; i < 21; i++) {
+  const CLASICOS = {
+    crunch: ["crunch", "crunch_brazos_arriba", "crunch_encogido"],
+    plancha: ["plancha_antebrazos", "plancha_un_brazo_rodillas", "plancha_un_brazo"],
+    piernas: ["elevacion_piernas", "elevacion_piernas_cadera"],
+  };
+
+  it("cada día lleva crunch, plancha y elevación de piernas, por delante de cualquier otro, en 8–16 min", () => {
+    for (let i = 0; i < 70; i++) {
       const fecha = sumarDias(LUNES, i);
       const r = rutinaAbdominales(fecha, LUNES, filtroCasa);
-      for (const c of CATEGORIAS_CORE) expect(r.items.some((it) => it.categoria === c), `${fecha} ${c}`).toBe(true);
+      const ids = r.items.map((it) => it.exerciseId);
+      expect(CLASICOS.crunch, fecha).toContain(ids[0]);
+      expect(CLASICOS.plancha, fecha).toContain(ids[1]);
+      expect(CLASICOS.piernas, fecha).toContain(ids[2]);
       expect(r.duracionEstimadaMin, fecha).toBeGreaterThanOrEqual(8);
       expect(r.duracionEstimadaMin, fecha).toBeLessThanOrEqual(16);
     }
   });
 
-  it("varía entre días", () => {
-    const a = rutinaAbdominales(LUNES, LUNES, filtroCasa).items.map((i) => i.exerciseId);
-    const b = rutinaAbdominales(sumarDias(LUNES, 1), LUNES, filtroCasa).items.map((i) => i.exerciseId);
-    expect(a).not.toEqual(b);
+  it("la plancha alterna entre la normal y la variante a un brazo", () => {
+    const planchas = [0, 1].map((i) => rutinaAbdominales(sumarDias(LUNES, i), LUNES, filtroCasa).items[1].exerciseId);
+    expect(planchas).toEqual(["plancha_antebrazos", "plancha_un_brazo_rodillas"]);
   });
 
-  it("ningún ejercicio carga la mano izquierda; la plancha sobre antebrazos solo sale si es cómoda", () => {
-    for (const e of EJERCICIOS_ABDOMINALES) expect(["agarre", "apoyo_mano"]).not.toContain(e.manoIzquierda);
-    const sin = idsEn28Dias(filtroCasa);
+  it("si apoyar el antebrazo izquierdo no es cómodo, solo planchas a un brazo (sobre el derecho)", () => {
+    const sin = idsEn28Dias({ ...filtroCasa, permiteApoyoAntebrazoIzq: false });
     expect(sin.has("plancha_antebrazos")).toBe(false);
     expect(sin.has("plancha_lateral_izquierda")).toBe(false);
-    const con = idsEn28Dias({ ...filtroCasa, permiteApoyoAntebrazoIzq: true });
-    expect(con.has("plancha_antebrazos")).toBe(true);
+    expect(sin.has("plancha_un_brazo_rodillas")).toBe(true);
   });
 
-  it("sin banda elástica no aparece el Pallof", () => {
-    expect(idsEn28Dias(filtroCasa).has("pallof_banda")).toBe(false);
-    expect(idsEn28Dias({ ...filtroCasa, equipo: ["banda_elastica"] }).has("pallof_banda")).toBe(true);
+  it("ningún ejercicio carga la mano o la muñeca izquierda", () => {
+    for (const e of EJERCICIOS_ABDOMINALES) expect(["agarre", "apoyo_mano"]).not.toContain(e.manoIzquierda);
+    expect(ejercicio("plancha_un_brazo").manoIzquierda).toBe("ninguna");
   });
 
-  it("progresa cada semana y pasa a una variante más difícil al llegar al tope", () => {
+  it("más difícil desde el primer día: 3 series y crunch desde 15 reps, plancha desde 30 s", () => {
+    const r = rutinaAbdominales(LUNES, LUNES, filtroCasa);
+    expect(r.items.every((it) => it.series === 3)).toBe(true);
+    expect(r.items[0].objetivo).toBe(15);
+    expect(r.items[1].objetivo).toBe(30);
+    expect(r.items[2].objetivo).toBe(12);
+  });
+
+  it("la dificultad sigue subiendo con las semanas y pasa a variantes más difíciles", () => {
     const crunch = ejercicio("crunch");
-    expect(resolverProgresion(crunch, 0).objetivo).toBe(12);
-    expect(resolverProgresion(crunch, 1).objetivo).toBe(14);
+    expect(resolverProgresion(crunch, 0).objetivo).toBe(15);
+    expect(resolverProgresion(crunch, 1).objetivo).toBe(17);
     const lejos = resolverProgresion(crunch, 10);
     expect(lejos.ejercicio.id).toBe("crunch_brazos_arriba");
     expect(lejos.nivel).toBe(1);
-  });
-
-  it("las series suben de 2 a 3 a partir de la tercera semana", () => {
-    expect(rutinaAbdominales(LUNES, LUNES, filtroCasa).items[0].series).toBe(2);
-    expect(rutinaAbdominales(sumarDias(LUNES, 14), LUNES, filtroCasa).items[0].series).toBe(3);
+    expect(resolverProgresion(ejercicio("plancha_un_brazo_rodillas"), 8).ejercicio.id).toBe("plancha_un_brazo");
+    expect(resolverProgresion(ejercicio("elevacion_piernas"), 9).ejercicio.id).toBe("elevacion_piernas_cadera");
+    // Volumen total creciente semana a semana.
+    const total = (sem: number) =>
+      rutinaAbdominales(sumarDias(LUNES, sem * 7), LUNES, filtroCasa).items.slice(0, 3).reduce((t, it) => t + it.objetivo, 0);
+    expect(total(3)).toBeGreaterThan(total(0));
   });
 });
 

@@ -18,7 +18,8 @@ export function filtroCasa(perfil: Profile, ajustes: Settings, ev: ArmAssessment
     equipo: ajustes.equipoCasa,
     limitaciones: perfil.limitaciones,
     excluidos: perfil.excluidos,
-    permiteApoyoAntebrazoIzq: ev?.apoyoAntebrazoComodo === "si",
+    // La plancha sobre antebrazos entra salvo que la autoevaluación del brazo diga que no es cómoda.
+    permiteApoyoAntebrazoIzq: ev?.apoyoAntebrazoComodo !== "no",
   };
 }
 

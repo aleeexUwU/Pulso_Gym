@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, Flame, Pause, Play, SkipForward } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { TecnicaSheet } from "@/components/exercise/technique";
 import { FlashSangre } from "@/components/flash-sangre";
@@ -19,6 +19,7 @@ import { CATEGORIA_NOMBRE, rutinaAbdominales, type AbsItem } from "@/lib/domain/
 import { hoyISO } from "@/lib/domain/dates";
 import { ejercicio } from "@/lib/domain/exercises";
 import { racha } from "@/lib/domain/weekly-plan";
+import { useCuentaAtras } from "@/lib/hooks/use-cuenta-atras";
 import { cn } from "@/lib/utils";
 import { sincronizarRecordatorioConSW } from "@/lib/pwa/recordatorio";
 
@@ -58,7 +59,6 @@ export default function SesionAbdominales() {
   const [i, setI] = useState(0);
   const [fin, setFin] = useState<number | null>(null);
   const [pausaRestante, setPausaRestante] = useState<number | null>(null);
-  const [ahora, setAhora] = useState(() => Date.now());
   const [conteo, setConteo] = useState(0);
   const [terminado, setTerminado] = useState(false);
   const [tecnica, setTecnica] = useState<string | null>(null);
@@ -117,29 +117,17 @@ export default function SesionAbdominales() {
     avanzar();
   }, [paso, guardarProgreso, avanzar]);
 
-  const restante = fin && pausaRestante === null ? Math.max(0, Math.ceil((fin - ahora) / 1000)) : pausaRestante ?? 0;
-
-  // Reloj de la sesión: al vencer un temporizador (descanso o trabajo por tiempo) avanza solo.
-  const alVencer = useRef<() => void>(() => {});
-  useEffect(() => {
-    alVencer.current = () => {
-      if (ajustes?.vibracion) vibrar([200, 100, 200]);
-      if (ajustes?.sonido) pitar(paso?.tipo === "trabajo" ? 3 : 2);
-      if (paso?.tipo === "trabajo") completarTrabajo();
-      else avanzar();
-    };
+  // Cuenta atrás precisa (timestamps reales, un render por segundo). Al llegar a 0
+  // avanza sola: termina la serie por tiempo o el descanso.
+  const enMarcha = fin !== null && pausaRestante === null ? fin : null;
+  const restanteVivo = useCuentaAtras(enMarcha, () => {
+    setFin(null);
+    if (ajustes?.vibracion) vibrar([200, 100, 200]);
+    if (ajustes?.sonido) pitar(paso?.tipo === "trabajo" ? 3 : 2);
+    if (paso?.tipo === "trabajo") completarTrabajo();
+    else avanzar();
   });
-  useEffect(() => {
-    const t = setInterval(() => {
-      const ya = Date.now();
-      setAhora(ya);
-      if (fin !== null && pausaRestante === null && fin <= ya) {
-        setFin(null);
-        alVencer.current();
-      }
-    }, 200);
-    return () => clearInterval(t);
-  }, [fin, pausaRestante]);
+  const restante = pausaRestante ?? restanteVivo;
 
   if (!rutina || !ajustes || !sesiones) return <Cargando />;
 
@@ -190,7 +178,11 @@ export default function SesionAbdominales() {
           {paso.tipo === "descanso" ? (
             <Glass className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <p className="text-sm uppercase tracking-widest text-muted-foreground">Descanso</p>
-              <p className={cn("font-display text-8xl tabular-nums text-primary", restante <= 3 && "parpadeo")}>{restante}</p>
+              <p className="font-display text-8xl tabular-nums text-primary">
+                <span key={restante <= 3 ? restante : "normal"} className={cn("inline-block", restante <= 3 && "latido")}>
+                  {restante}
+                </span>
+              </p>
               <p className="text-sm text-muted-foreground">Siguiente: {paso.siguiente}</p>
             </Glass>
           ) : (
@@ -208,7 +200,11 @@ export default function SesionAbdominales() {
                 </div>
                 {item.medida === "segundos" ? (
                   <div className="text-center">
-                    <p className={cn("font-display text-8xl tabular-nums text-primary", fin && restante <= 3 && "parpadeo")}>{fin ? restante : item.objetivo}</p>
+                    <p className="font-display text-8xl tabular-nums text-primary">
+                      <span key={fin && restante <= 3 ? restante : "normal"} className={cn("inline-block", fin && restante <= 3 && "latido")}>
+                        {fin ? restante : item.objetivo}
+                      </span>
+                    </p>
                     <p className="text-sm text-muted-foreground">segundos</p>
                   </div>
                 ) : (

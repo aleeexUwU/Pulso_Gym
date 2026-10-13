@@ -271,9 +271,22 @@
   .flash-sangre {
     animation: flash-sangre 0.55s ease-out 1 both;
   }
-  /* Parpadeo del temporizador en los últimos segundos. */
-  .parpadeo {
-    animation: parpadeo 1s steps(2, end) infinite;
+  /*
+   * Últimos segundos del temporizador: un latido por segundo. Solo transform y
+   * opacity (los mueve la GPU), nada de text-shadow ni filtros que obliguen a
+   * repintar números enormes en cada fotograma.
+   */
+  .latido {
+    animation: latido 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+    will-change: transform, opacity;
+  }
+  /* Barra de progreso del descanso: una animación por descanso, compuesta en GPU. */
+  .barra-descanso {
+    transform-origin: left center;
+    animation-name: barra-descanso;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    will-change: transform;
   }
 }
 
@@ -308,9 +321,13 @@
   36% { opacity: 0.8; transform: none; }
   100% { opacity: 0; }
 }
-@keyframes parpadeo {
-  0%, 100% { opacity: 1; text-shadow: 0 0 18px oklch(0.64 0.22 25 / 0.7); }
-  50% { opacity: 0.55; text-shadow: none; }
+@keyframes latido {
+  0% { transform: scale(1.18); opacity: 0.55; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes barra-descanso {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 /* Movimiento reducido: sin glitch, destellos ni parpadeos. */
@@ -318,7 +335,7 @@
   .glitch::before,
   .glitch::after,
   .flash-sangre,
-  .parpadeo,
+  .latido,
   .ojo-parpado {
     animation: none !important;
   }

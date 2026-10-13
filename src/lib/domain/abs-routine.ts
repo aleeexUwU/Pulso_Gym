@@ -1,5 +1,5 @@
 import { diasEntre, sumarDias } from "./dates";
-import { EJERCICIOS_ABDOMINALES, ejercicio } from "./exercises";
+import { ejercicio } from "./exercises";
 import { ejercicioPermitido, type FiltroEjercicios } from "./limitations";
 import { coberturaVacia } from "./muscles";
 import type { CoreCategory, Coverage, Exercise } from "./types";
@@ -32,11 +32,6 @@ export interface AbsRoutine {
   duracionEstimadaMin: number;
 }
 
-/** Variantes "raíz": las que no son la versión difícil de otra. */
-function raices(): Exercise[] {
-  const destinos = new Set(EJERCICIOS_ABDOMINALES.map((e) => e.siguiente).filter(Boolean));
-  return EJERCICIOS_ABDOMINALES.filter((e) => !destinos.has(e.id));
-}
 
 /** Semanas que tarda una variante en llegar a su tope (reps o segundos máximos). */
 function semanasHastaTope(e: Exercise): number {
@@ -74,43 +69,64 @@ function tiempoSerieSeg(item: Pick<AbsItem, "medida" | "objetivo">): number {
 }
 
 /**
- * Rutina de core del día: un ejercicio de cada categoría (recto, oblicuos,
- * transverso, lumbar) más uno extra que rota, variando las variantes cada día.
+ * Líneas fijas de cada día: los abdominales clásicos van SIEMPRE y por delante.
+ * Cada línea tiene sus raíces en orden de preferencia: se usa la primera permitida.
+ * La plancha alterna por días entre la normal y la variante a un brazo.
+ */
+const LINEAS_FIJAS: { categoria: CoreCategory; raices: (d: number) => string[] }[] = [
+  { categoria: "recto", raices: () => ["crunch"] },
+  {
+    categoria: "transverso",
+    raices: (d) =>
+      d % 2 === 0 ? ["plancha_antebrazos", "plancha_un_brazo_rodillas"] : ["plancha_un_brazo_rodillas", "plancha_antebrazos"],
+  },
+  { categoria: "recto", raices: () => ["elevacion_piernas", "crunch_inverso"] },
+];
+
+/** Complemento que rota cada día (oblicuos y zona lumbar), detrás de los clásicos. */
+const EXTRAS: { categoria: CoreCategory; id: string }[] = [
+  { categoria: "oblicuos", id: "plancha_lateral_derecha" },
+  { categoria: "oblicuos", id: "toque_talones" },
+  { categoria: "lumbar", id: "superman" },
+];
+
+/** Series por ejercicio: 3 desde el principio. */
+export const SERIES_CORE = 3;
+
+/**
+ * Rutina de core del día: crunch, plancha (normal o a un brazo) y elevación de
+ * piernas tumbado, siempre; más un complemento rotativo si cabe en 15 min.
+ * Cada semana suben reps/segundos y, al tope, se pasa a la variante más difícil.
  */
 export function rutinaAbdominales(fecha: string, inicio: string, filtro: FiltroEjercicios): AbsRoutine {
   const d = Math.max(0, diasEntre(inicio, fecha));
   const semana = Math.floor(d / 7);
   const permitido = (e: Exercise) => ejercicioPermitido(e, filtro);
-  const disponibles = raices().filter(permitido);
-  const series = semana < 2 ? 2 : 3;
 
   const items: AbsItem[] = [];
   const usados = new Set<string>();
-  const anadir = (cat: CoreCategory, desplazamiento: number) => {
-    const opciones = disponibles.filter((e) => e.categoriaCore === cat && !usados.has(e.id));
-    if (opciones.length === 0) return;
-    const base = opciones[(d + desplazamiento) % opciones.length];
-    usados.add(base.id);
+  const anadir = (base: Exercise, categoria: CoreCategory) => {
     const { ejercicio: ej, objetivo, nivel } = resolverProgresion(base, semana, permitido);
-    items.push({
-      exerciseId: ej.id,
-      categoria: cat,
-      series,
-      objetivo,
-      medida: ej.medida,
-      descansoSeg: ej.descansoSeg,
-      nivel,
-    });
+    if (usados.has(ej.id)) return;
+    usados.add(ej.id);
+    items.push({ exerciseId: ej.id, categoria, series: SERIES_CORE, objetivo, medida: ej.medida, descansoSeg: ej.descansoSeg, nivel });
   };
 
-  CATEGORIAS_CORE.forEach((cat, i) => anadir(cat, i));
-  // Extra rotativo para llegar a 10–15 min y dar más variedad.
-  anadir(CATEGORIAS_CORE[d % CATEGORIAS_CORE.length], 1);
+  for (const linea of LINEAS_FIJAS) {
+    const base = linea.raices(d).map((id) => ejercicio(id)).find(permitido);
+    if (base) anadir(base, linea.categoria);
+  }
+  const extras = EXTRAS.map((x) => ({ ...x, e: ejercicio(x.id) })).filter((x) => permitido(x.e));
+  if (extras.length) {
+    const x = extras[d % extras.length];
+    anadir(x.e, x.categoria);
+  }
 
+  const fijos = items.length - (extras.length ? 1 : 0);
   const segundos = () => items.reduce((t, it) => t + it.series * (tiempoSerieSeg(it) + it.descansoSeg) + 20, 0);
-  // Mantener la sesión en 10–15 min: primero se acortan descansos y luego se quita el extra.
+  // Mantener la sesión en 10–15 min: primero se acortan descansos y luego se quita el complemento.
   if (segundos() > 15 * 60) items.forEach((it) => (it.descansoSeg = 20));
-  while (segundos() > 15 * 60 && items.length > CATEGORIAS_CORE.length) items.pop();
+  while (segundos() > 15 * 60 && items.length > fijos) items.pop();
   return { fecha, semana, items, duracionEstimadaMin: Math.round(segundos() / 60) };
 }
 

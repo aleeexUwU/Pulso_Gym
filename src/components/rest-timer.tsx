@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, SkipForward } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCuentaAtras } from "@/lib/hooks/use-cuenta-atras";
 import { cn } from "@/lib/utils";
 
 /** Pitido corto con Web Audio (no necesita archivos). */
@@ -56,26 +56,15 @@ export function RestTimer({
   sonido: boolean;
   vibracion: boolean;
 }) {
-  const [ahora, setAhora] = useState(() => Date.now());
-  const avisado = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!descanso) return;
-    const t = setInterval(() => setAhora(Date.now()), 250);
-    return () => clearInterval(t);
-  }, [descanso]);
-
-  const restante = descanso ? Math.max(0, Math.ceil((descanso.hasta - ahora) / 1000)) : 0;
-
-  useEffect(() => {
-    if (!descanso || restante > 0 || avisado.current === descanso.hasta) return;
-    avisado.current = descanso.hasta;
+  const hasta = descanso?.hasta ?? null;
+  const restante = useCuentaAtras(hasta, () => {
     if (vibracion) vibrar();
     if (sonido) pitar();
     onFin();
-  }, [descanso, restante, sonido, vibracion, onFin]);
-
-  const pct = descanso ? Math.min(100, ((descanso.total - restante) / descanso.total) * 100) : 0;
+  });
+  // Progreso de la barra: una sola animación CSS (transform) por descanso, fluida y
+  // sin re-renders. El retraso negativo la sitúa en el punto actual.
+  const transcurrido = descanso ? Math.max(0, descanso.total - restante) : 0;
   const mm = Math.floor(restante / 60);
   const ss = String(restante % 60).padStart(2, "0");
 
@@ -92,13 +81,20 @@ export function RestTimer({
           aria-live="polite"
         >
           <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-            <div className="h-full rounded-full bg-gradient-to-r from-[var(--neon)] to-[var(--violet)] transition-[width] duration-200" style={{ width: `${pct}%` }} />
+            <div
+              key={descanso.hasta}
+              className="barra-descanso h-full w-full rounded-full bg-gradient-to-r from-[var(--neon)] to-[var(--violet)]"
+              style={{ animationDuration: `${descanso.total}s`, animationDelay: `-${transcurrido}s` }}
+            />
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground">{descanso.etiqueta}</p>
-              <p className={cn("font-display text-6xl tabular-nums text-primary", restante <= 3 && "parpadeo")}>
-                {mm}:{ss}
+              <p className="font-display text-6xl tabular-nums text-primary">
+                {/* Últimos 3 s: un "latido" por segundo que solo anima transform/opacity. */}
+                <span key={restante <= 3 ? restante : "normal"} className={cn("inline-block", restante <= 3 && "latido")}>
+                  {mm}:{ss}
+                </span>
               </p>
             </div>
             <button
