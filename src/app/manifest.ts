@@ -4,8 +4,8 @@ export const dynamic = "force-static";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pulso · Entreno personal",
-    short_name: "Pulso",
+    name: "vl3x-GYM · Entreno personal",
+    short_name: "vl3x-GYM",
     description: "Gimnasio adaptado con el brazo derecho, core diario en casa y módulo de brazo izquierdo.",
     lang: "es",
     start_url: "/",

@@ -22,9 +22,9 @@ const SPLASH: [number, number, number, number][] = [
 ];
 
 export const metadata: Metadata = {
-  title: { default: "Pulso · Entreno", template: "%s · Pulso" },
+  title: { default: "vl3x-GYM", template: "%s · vl3x-GYM" },
   description: "Entrenamiento personal adaptado: gimnasio con el brazo derecho, core diario en casa y módulo de brazo izquierdo.",
-  applicationName: "Pulso",
+  applicationName: "vl3x-GYM",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Pulso",
+    title: "vl3x-GYM",
     statusBarStyle: "black-translucent",
     startupImage: SPLASH.map(([w, h, cw, ch]) => ({
       url: `/icons/splash-${w}x${h}.png`,

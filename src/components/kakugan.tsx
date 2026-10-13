@@ -50,13 +50,13 @@ export function Kakugan({ className, parpadeo = true }: { className?: string; pa
   );
 }
 
-/** Logotipo: ojo + "PULSO" en Nosifer (la fuente solo se usa aquí). */
+/** Logotipo: ojo + "VL3X-GYM" en Nosifer (la fuente solo se usa aquí). */
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <Kakugan className="h-6 w-10" />
-      <span className="font-logo text-lg tracking-wider text-primary" aria-label="Pulso">
-        PULSO
+      <span className="font-logo text-lg tracking-wider text-primary" aria-label="vl3x-GYM">
+        VL3X-GYM
       </span>
     </span>
   );

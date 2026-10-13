@@ -1,4 +1,4 @@
-# Pulso · App de entrenamiento personal (PWA)
+# vl3x-GYM · App de entrenamiento personal (PWA)
 
 **App publicada:** https://pulso-gym-two.vercel.app (cada push a `main` se despliega solo en Vercel).
 

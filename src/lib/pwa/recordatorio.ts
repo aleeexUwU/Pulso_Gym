@@ -67,9 +67,9 @@ export function descargarICS(hora: string): void {
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Gym PWA//ES",
+    "PRODID:-//vl3x-GYM//ES",
     "BEGIN:VEVENT",
-    `UID:abs-diario-${Date.now()}@gym-pwa`,
+    `UID:abs-diario-${Date.now()}@vl3x-gym`,
     `DTSTAMP:${fmt(d)}`,
     `DTSTART:${fmt(ini)}`,
     `DTEND:${fmt(fin)}`,

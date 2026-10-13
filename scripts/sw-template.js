@@ -149,7 +149,7 @@ self.addEventListener("periodicsync", (event) => {
 self.addEventListener("push", (event) => {
   const datos = event.data ? event.data.json() : {};
   event.waitUntil(
-    self.registration.showNotification(datos.titulo || "Entreno", {
+    self.registration.showNotification(datos.titulo || "vl3x-GYM", {
       body: datos.cuerpo || "",
       icon: "/icons/icon-192.png",
       data: { url: datos.url || "/" },
