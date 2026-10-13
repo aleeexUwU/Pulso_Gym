@@ -56,9 +56,9 @@ export function ExerciseImage({
           decoding="async"
         />
       </AnimatePresence>
-      <span className="absolute bottom-1.5 right-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+      {animar && <span className="absolute bottom-1.5 right-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
         {frame === 0 ? "Inicio" : "Final"}
-      </span>
+      </span>}
     </div>
   );
 }

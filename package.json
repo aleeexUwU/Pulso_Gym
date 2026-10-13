@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/build-sw.mjs",
+    "build": "next build && node scripts/fix-rsc.mjs && node scripts/build-sw.mjs",
     "preview": "node scripts/servir.mjs",
     "lint": "eslint",
     "test": "vitest run",

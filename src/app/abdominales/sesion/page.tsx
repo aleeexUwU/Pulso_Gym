@@ -151,7 +151,7 @@ export default function SesionAbdominales() {
           <Flame className="size-12 text-warn" />
         </motion.div>
         <h1 className="glitch font-display text-4xl text-primary" data-text="¡Core hecho!">¡Core hecho!</h1>
-        <p className="text-muted-foreground">Racha: {racha(fechas, hoy)} días</p>
+        <p className="text-muted-foreground">Racha: {racha(fechas, hoy)} {racha(fechas, hoy) === 1 ? "día" : "días"}</p>
         <Button asChild className="h-14 w-full rounded-2xl text-base">
           <Link href="/abdominales/">Volver</Link>
         </Button>

@@ -152,6 +152,7 @@ function Sesion() {
           const rir = borrador.rir;
           const usado = borrador.pesoKg;
           sig.pesoKg = redondearPeso(rir == null ? Math.max(sig.objetivoPeso ?? 0, usado) : rir >= 4 ? usado + incr : rir >= 2 ? usado : usado - incr);
+          sig.objetivoPeso = sig.pesoKg;
         } else if (sig.pesoKg === sig.objetivoPeso) {
           sig.pesoKg = borrador.pesoKg;
         }

@@ -1,4 +1,4 @@
-/* Service worker de la PWA. scripts/build-sw.mjs sustituye __VERSION__ y __PRECACHE__ en el build. */
+/* Service worker de la PWA. scripts/build-sw.mjs rellena la versión y las listas de archivos en el build. */
 const VERSION = "__VERSION__";
 const PRECACHE = __PRECACHE__;
 const IMAGENES = __IMAGENES__;
