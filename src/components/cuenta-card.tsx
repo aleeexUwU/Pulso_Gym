@@ -1,6 +1,6 @@
 "use client";
 
-import { Cloud, CloudOff, LogOut, Mail, RefreshCw } from "lucide-react";
+import { Cloud, CloudOff, Eye, EyeOff, LogIn, LogOut, RefreshCw, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,25 @@ import { Input } from "@/components/ui/input";
 import { supabase, supabaseConfigurado } from "@/lib/sync/supabase";
 import { sincronizar, suscribirSync, type EstadoSync } from "@/lib/sync/sync";
 
-/** Cuenta (enlace mágico por email) y estado de la sincronización con Supabase. */
+/** Traduce los errores de Supabase Auth más habituales. */
+function mensajeError(m: string): string {
+  if (/invalid login credentials/i.test(m)) return "Email o contraseña incorrectos.";
+  if (/already registered|already been registered/i.test(m)) return "Ese email ya tiene cuenta: pulsa «Entrar».";
+  if (/password should be at least|weak password/i.test(m)) return "La contraseña es demasiado corta o débil (mínimo 8 caracteres).";
+  if (/email not confirmed/i.test(m)) return "Ese email está pendiente de confirmar. Pide ayuda para activarlo.";
+  if (/signups? not allowed|signup is disabled/i.test(m)) return "El registro de cuentas nuevas está cerrado.";
+  if (/rate limit/i.test(m)) return "Demasiados intentos seguidos. Espera unos minutos.";
+  return m;
+}
+
+/** Cuenta (email y contraseña) y estado de la sincronización con Supabase. */
 export function CuentaCard() {
   const [email, setEmail] = useState("");
+  const [clave, setClave] = useState("");
+  const [verClave, setVerClave] = useState(false);
   const [usuario, setUsuario] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoSync>({ tipo: "local" });
-  const [enviando, setEnviando] = useState(false);
-  const [enviado, setEnviado] = useState(false);
-  const [codigo, setCodigo] = useState("");
+  const [ocupado, setOcupado] = useState(false);
 
   useEffect(() => suscribirSync(setEstado), []);
   useEffect(() => {
@@ -38,71 +49,63 @@ export function CuentaCard() {
     );
   }
 
+  async function acceder(modo: "entrar" | "crear") {
+    if (!email || clave.length < 8) return toast.error("Escribe tu email y una contraseña de al menos 8 caracteres.");
+    setOcupado(true);
+    const sb = supabase()!;
+    const { data, error } =
+      modo === "entrar"
+        ? await sb.auth.signInWithPassword({ email, password: clave })
+        : await sb.auth.signUp({ email, password: clave });
+    setOcupado(false);
+    if (error) return toast.error(mensajeError(error.message));
+    if (!data.session) return toast.error("La cuenta se ha creado pero falta confirmarla por correo.");
+    setClave("");
+    toast.success(modo === "crear" ? "¡Cuenta creada y sesión iniciada!" : "¡Sesión iniciada!");
+  }
+
   if (!usuario) {
     return (
       <form
-        className="space-y-2"
-        onSubmit={async (e) => {
+        className="space-y-3"
+        onSubmit={(e) => {
           e.preventDefault();
-          setEnviando(true);
-          const { error } = await supabase()!.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: `${window.location.origin}/ajustes/` },
-          });
-          setEnviando(false);
-          if (error) {
-            toast.error(
-              /rate limit/i.test(error.message)
-                ? "Has pedido demasiados correos seguidos. Espera unos minutos y vuelve a intentarlo."
-                : error.message,
-            );
-          } else {
-            setEnviado(true);
-            toast.success("Correo enviado. Abre el enlace o escribe aquí el código.");
-          }
+          void acceder("entrar");
         }}
       >
         <p className="text-sm text-muted-foreground">
-          Inicia sesión con tu email para guardar tus datos en la nube. Te llegará un correo con un enlace y un código.
+          Inicia sesión para guardar tus datos en la nube y usar la IA de la dieta. La primera vez, pulsa «Crear cuenta».
         </p>
-        <div className="flex gap-2">
-          <Input type="email" required autoComplete="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl" aria-label="Email" />
-          <Button type="submit" className="h-12 rounded-xl" disabled={enviando}>
-            <Mail /> {enviado ? "Reenviar" : "Enviar"}
+        <Input type="email" required autoComplete="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl" aria-label="Email" />
+        <div className="relative">
+          <Input
+            type={verClave ? "text" : "password"}
+            required
+            minLength={8}
+            autoComplete="current-password"
+            placeholder="Contraseña (mín. 8 caracteres)"
+            value={clave}
+            onChange={(e) => setClave(e.target.value)}
+            className="h-12 rounded-xl pr-12"
+            aria-label="Contraseña"
+          />
+          <button
+            type="button"
+            onClick={() => setVerClave((v) => !v)}
+            className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center text-muted-foreground"
+            aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}
+          >
+            {verClave ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="submit" className="h-12 rounded-xl" disabled={ocupado}>
+            <LogIn /> Entrar
+          </Button>
+          <Button type="button" variant="outline" className="h-12 rounded-xl" disabled={ocupado} onClick={() => acceder("crear")}>
+            <UserPlus /> Crear cuenta
           </Button>
         </div>
-        {enviado && (
-          <div className="space-y-2 rounded-xl bg-secondary/50 p-3">
-            <p className="text-sm">
-              ¿El enlace no te deja dentro? Escribe el <strong>código de 6 dígitos</strong> del correo:
-            </p>
-            <div className="flex gap-2">
-              <Input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={10}
-                placeholder="123456"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
-                className="h-12 rounded-xl text-center font-heading text-2xl tracking-[0.3em]"
-                aria-label="Código del correo"
-              />
-              <Button
-                type="button"
-                className="h-12 rounded-xl"
-                disabled={codigo.length < 6}
-                onClick={async () => {
-                  const { error } = await supabase()!.auth.verifyOtp({ email, token: codigo, type: "email" });
-                  if (error) toast.error(/expired|invalid/i.test(error.message) ? "Código incorrecto o caducado. Pide otro." : error.message);
-                  else toast.success("¡Sesión iniciada!");
-                }}
-              >
-                Entrar
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Si no llega en unos minutos, mira en spam.</p>
-          </div>
-        )}
       </form>
     );
   }
