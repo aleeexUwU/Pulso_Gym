@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Hand, NotebookPen, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Hand, Lightbulb, NotebookPen, Repeat, Target, Weight, Wrench, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNota } from "@/lib/db/hooks";
 import { guardar } from "@/lib/db/repo";
 import type { ExerciseNote } from "@/lib/db/types";
+import { consejosDe } from "@/lib/domain/consejos";
 import { getEjercicio } from "@/lib/domain/exercises";
 import { EQUIPO_NOMBRE, GRUPO_NOMBRE } from "@/lib/domain/muscles";
 import type { Exercise, MuscleGroup } from "@/lib/domain/types";
@@ -142,6 +143,64 @@ export function TecnicaSheet({
               <SheetDescription>Técnica, errores y adaptación</SheetDescription>
             </SheetHeader>
             <TecnicaContenido ejercicio={e} />
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+const ICONO_SECCION: Record<string, typeof Wrench> = {
+  "Antes de empezar": Wrench,
+  "En cada repetición": Repeat,
+  Evita: XCircle,
+  "El peso": Weight,
+  "Si no lo notas": Target,
+};
+
+/** Consejos rápidos para leer entre series (montaje, claves, peso). */
+export function ConsejosSheet({
+  exerciseId,
+  prescripcion,
+  onOpenChange,
+}: {
+  exerciseId: string | null;
+  prescripcion: { repsMin: number; repsMax: number; rir: number };
+  onOpenChange: (abierto: boolean) => void;
+}) {
+  const e = exerciseId ? getEjercicio(exerciseId) : undefined;
+  return (
+    <Sheet open={!!e} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-3xl px-4 pb-8">
+        {e && (
+          <>
+            <SheetHeader className="px-0">
+              <SheetTitle className="font-heading text-2xl tracking-wide">Consejos</SheetTitle>
+              <SheetDescription>{e.nombre}</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4">
+              {consejosDe(e, prescripcion).map((s) => {
+                const Icono = ICONO_SECCION[s.titulo] ?? Lightbulb;
+                return (
+                  <section key={s.titulo}>
+                    <h3 className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold">
+                      <Icono className={s.titulo === "Evita" ? "size-4 text-destructive" : "size-4 text-primary"} aria-hidden />
+                      {s.titulo}
+                    </h3>
+                    <ul className="space-y-1.5 text-[15px] leading-relaxed">
+                      {s.lineas.map((l, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span aria-hidden className="text-muted-foreground">
+                            •
+                          </span>
+                          <span className={s.titulo === "Evita" ? "text-muted-foreground" : undefined}>{l}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
+            </div>
           </>
         )}
       </SheetContent>

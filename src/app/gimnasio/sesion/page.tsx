@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   BookOpen,
+  Lightbulb,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -21,7 +22,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { Kakugan } from "@/components/kakugan";
-import { NotaEjercicio, TecnicaSheet } from "@/components/exercise/technique";
+import { ConsejosSheet, NotaEjercicio, TecnicaSheet } from "@/components/exercise/technique";
 import { SustituirDialog } from "@/components/gym/sustituir-dialog";
 import { FlashSangre } from "@/components/flash-sangre";
 import { RestTimer, type Descanso } from "@/components/rest-timer";
@@ -97,6 +98,7 @@ function Sesion() {
   const [descanso, setDescanso] = useState<Descanso | null>(null);
   const [destino, setDestino] = useState<number | null>(null);
   const [tecnica, setTecnica] = useState<string | null>(null);
+  const [consejos, setConsejos] = useState<string | null>(null);
   const [sustituir, setSustituir] = useState(false);
   const [verNotas, setVerNotas] = useState(false);
   const [flash, setFlash] = useState(0);
@@ -352,6 +354,13 @@ function Sesion() {
                 {ej.alternativaPreferida && <>Preferible si está libre: {ejercicio(ej.alternativaPreferida).nombre}.</>}
               </Aviso>
             )}
+            <Button
+              variant="outline"
+              className="h-12 w-full rounded-xl border-primary/40 bg-primary/10 text-base text-primary"
+              onClick={() => setConsejos(e.id)}
+            >
+              <Lightbulb /> Consejos
+            </Button>
             <div className="grid grid-cols-4 gap-1.5">
               <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs" onClick={() => setTecnica(e.id)}>
                 <BookOpen /> Técnica
@@ -487,6 +496,7 @@ function Sesion() {
       />
       <FlashSangre disparo={flash} />
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
+      <ConsejosSheet exerciseId={consejos} prescripcion={ej} onOpenChange={(a) => !a && setConsejos(null)} />
       <SustituirDialog
         exerciseId={sustituir ? e.id : null}
         perfil={perfil}

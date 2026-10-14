@@ -235,3 +235,16 @@ describe("principiante: sin mancuernas y prioridad de tren superior (3 días)", 
     }
   });
 });
+
+describe("consejos", () => {
+  it("cada consejo corresponde a un ejercicio del catálogo y tiene contenido", async () => {
+    const { CONSEJOS, consejosDe } = await import("../consejos");
+    for (const [id, c] of Object.entries(CONSEJOS)) {
+      expect(EJERCICIOS.some((e) => e.id === id), id).toBe(true);
+      expect(c.prepara.length + c.claves.length, id).toBeGreaterThan(0);
+    }
+    for (const e of EJERCICIOS_GIMNASIO) {
+      expect(consejosDe(e, { repsMin: 8, repsMax: 12, rir: 2 }).length, e.id).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
