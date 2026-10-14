@@ -3,6 +3,7 @@
 import { Hand, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { AdminIA } from "@/components/admin-ia";
 import { CuentaCard } from "@/components/cuenta-card";
 import { ReminderCard } from "@/components/reminder-card";
 import { Button } from "@/components/ui/button";
@@ -302,6 +303,8 @@ export default function Ajustes() {
         <SectionTitle>Cuenta y sincronización</SectionTitle>
         <CuentaCard />
       </Glass>
+
+      <AdminIA />
 
       <Glass className="space-y-3">
         <SectionTitle>Tus datos</SectionTitle>

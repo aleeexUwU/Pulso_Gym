@@ -63,6 +63,19 @@ export async function activarPush(hora: string): Promise<void> {
   await guardarEnServidor(sub, hora, true);
 }
 
+/** Activa o quita el aviso de proteína en este dispositivo (debe estar suscrito). */
+export async function avisoProteinaPush(activo: boolean, objetivo: number): Promise<boolean> {
+  if (!pushSoportado()) return false;
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return false;
+  const { error } = (await supabase()
+    ?.from("suscripciones_push")
+    .update({ aviso_proteina: activo, proteina_objetivo: objetivo, actualizado_en: new Date().toISOString() })
+    .eq("endpoint", sub.endpoint)) ?? { error: null };
+  return !error;
+}
+
 /** Cambia la hora (si este dispositivo está suscrito). */
 export async function actualizarHoraPush(hora: string): Promise<void> {
   if (!pushSoportado()) return;

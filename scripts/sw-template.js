@@ -11,18 +11,9 @@ self.addEventListener("install", (event) => {
     (async () => {
       const cache = await caches.open(CACHE_APP);
       await cache.addAll(PRECACHE);
-      // Las imágenes de técnica se descargan en segundo plano (no bloquean la instalación).
-      caches.open(CACHE_IMG).then(async (c) => {
-        for (const url of IMAGENES) {
-          if (!(await c.match(url))) {
-            try {
-              await c.add(url);
-            } catch {
-              /* se reintenta al verla */
-            }
-          }
-        }
-      });
+      // Las fotos de los ejercicios NO se descargan todas al instalar (eran ~6 MB de datos
+      // móviles): se guardan en caché la primera vez que se ven.
+      void IMAGENES;
     })(),
   );
 });

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Calendario } from "@/components/calendar";
-import { GraficaBarras, GraficaLineas } from "@/components/charts";
+import { GraficaBarras, GraficaLineas } from "@/components/charts-diferidos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +23,7 @@ import { formatoFecha, hoyISO, inicioSemana, sumarDias } from "@/lib/domain/date
 import { ejercicio } from "@/lib/domain/exercises";
 import { GRUPO_NOMBRE, GRUPOS } from "@/lib/domain/muscles";
 import { mejorRacha, racha } from "@/lib/domain/weekly-plan";
+import { cn } from "@/lib/utils";
 
 function Progreso() {
   const params = useSearchParams();
@@ -154,7 +155,51 @@ function Progreso() {
         </TabsContent>
 
         <TabsContent value="graficas" className="mt-4 space-y-4">
-          <Glass>
+          {registrados.length > 0 && (
+            <Glass>
+              <SectionTitle>Tu fuerza</SectionTitle>
+              <p className="-mt-2 mb-2 text-xs text-muted-foreground">
+                1RM estimado de tu última sesión y cuánto ha subido desde la primera. Toca uno para ver su gráfica.
+              </p>
+              <ul className="divide-y divide-border">
+                {registrados
+                  .map((id) => {
+                    const serie = serieEjercicio(workouts, id).filter((p) => p.e1rm > 0);
+                    if (serie.length === 0) return null;
+                    const primero = serie[0].e1rm;
+                    const ultimo = serie[serie.length - 1].e1rm;
+                    return { id, ultimo, cambio: primero ? Math.round(((ultimo - primero) / primero) * 100) : 0, sesiones: serie.length };
+                  })
+                  .filter((x): x is NonNullable<typeof x> => x !== null)
+                  .sort((a, b) => b.cambio - a.cambio)
+                  .map((x) => (
+                    <li key={x.id}>
+                      <button
+                        type="button"
+                        className={cn("flex w-full items-center gap-3 py-2.5 text-left", seleccionado === x.id && "text-primary")}
+                        onClick={() => {
+                          setEjSel(x.id);
+                          document.getElementById("grafica-ejercicio")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm">{ejercicio(x.id).nombre}</span>
+                          <span className="block text-xs text-muted-foreground">{x.sesiones} {x.sesiones === 1 ? "sesión" : "sesiones"}</span>
+                        </span>
+                        <span className="text-right tabular-nums">
+                          <span className="block text-sm font-semibold">{Math.round(x.ultimo)} kg</span>
+                          <span className={cn("block text-xs", x.cambio > 0 ? "text-lime" : x.cambio < 0 ? "text-warn" : "text-muted-foreground")}>
+                            {x.cambio > 0 ? "▲ +" : x.cambio < 0 ? "▼ " : ""}
+                            {x.cambio} %
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </Glass>
+          )}
+          <Glass id="grafica-ejercicio">
             <SectionTitle>Peso por ejercicio</SectionTitle>
             {registrados.length === 0 ? (
               <p className="text-sm text-muted-foreground">Completa alguna sesión para ver tu evolución.</p>

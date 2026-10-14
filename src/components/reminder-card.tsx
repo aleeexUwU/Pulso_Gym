@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { guardarAjustes } from "@/lib/app/planificacion";
 import type { Settings } from "@/lib/domain/types";
-import { activarPush, actualizarHoraPush, desactivarPush, enModoApp, esIOS, pushSoportado } from "@/lib/pwa/push";
+import { usePerfil } from "@/lib/db/hooks";
+import { objetivosDiarios } from "@/lib/domain/nutrition/objetivos";
+import { activarPush, actualizarHoraPush, avisoProteinaPush, desactivarPush, enModoApp, esIOS, pushSoportado } from "@/lib/pwa/push";
 import { descargarICS, notificacionesSoportadas, pedirPermiso, sincronizarRecordatorioConSW } from "@/lib/pwa/recordatorio";
 
 /** Configuración del recordatorio diario de abdominales. */
@@ -16,6 +18,7 @@ export function ReminderCard({ ajustes }: { ajustes: Settings }) {
   const [hora, setHora] = useState(ajustes.recordatorio.hora);
   const soportado = notificacionesSoportadas();
   const push = pushSoportado();
+  const perfil = usePerfil();
   const iosSinInstalar = esIOS() && !enModoApp();
 
   async function guardar(activo: boolean, nuevaHora = hora) {
@@ -78,6 +81,26 @@ export function ReminderCard({ ajustes }: { ajustes: Settings }) {
           <CalendarPlus /> Calendario
         </Button>
       </div>
+      {push && ajustes.recordatorio.activo && perfil && (
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>
+            Aviso de proteína
+            <span className="block text-xs text-muted-foreground">
+              Como mucho uno al día, a las 18:30, solo si ese día ya has apuntado comida y llevas menos de la mitad.
+            </span>
+          </span>
+          <Switch
+            checked={!!ajustes.avisoProteina}
+            onCheckedChange={async (v) => {
+              const ok = await avisoProteinaPush(v, objetivosDiarios(perfil, ajustes.dieta).proteinas);
+              if (!ok) return toast.error("Activa primero el recordatorio con avisos push en este dispositivo.");
+              await guardarAjustes({ avisoProteina: v });
+              toast.success(v ? "Aviso de proteína activado" : "Aviso de proteína desactivado");
+            }}
+            aria-label="Aviso de proteína"
+          />
+        </label>
+      )}
       <p className="text-xs leading-relaxed text-muted-foreground">
         {iosSinInstalar
           ? "En iPhone los avisos solo llegan con la app instalada: en Safari pulsa Compartir → «Añadir a pantalla de inicio», ábrela desde ahí y activa el recordatorio. Mientras, puedes usar el evento de calendario."

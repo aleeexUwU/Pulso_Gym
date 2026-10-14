@@ -635,3 +635,17 @@
     100% { opacity: 0; }
   }
 }
+
+/* Aparición suave de las tarjetas: empieza visible para no depender de que se anime. */
+.aparecer {
+  animation: aparecer 0.2s ease-out both;
+}
+@keyframes aparecer {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aparecer {
+    animation: none;
+  }
+}

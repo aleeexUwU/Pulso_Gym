@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, animate, motion, useMotionValue, useTransform, type HTMLMotionProps } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Ciempies } from "@/components/ciempies";
@@ -74,18 +74,15 @@ export function NumeroAnimado({ valor, decimales = 0 }: { valor: number; decimal
   return <motion.span className="tabular-nums">{texto}</motion.span>;
 }
 
-/** Tarjeta de cristal con aparición suave. */
-export function Glass({ className, children, ...props }: HTMLMotionProps<"section">) {
+/**
+ * Tarjeta de cristal. Aparece con un fundido CSS que empieza ya visible (opacidad 0,5):
+ * si el navegador no llegara a animar, la tarjeta se ve igual (nunca queda invisible).
+ */
+export function Glass({ className, children, ...props }: React.ComponentProps<"section">) {
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className={cn("glass rounded-3xl p-4", className)}
-      {...props}
-    >
+    <section className={cn("glass aparecer rounded-3xl p-4", className)} {...props}>
       {children}
-    </motion.section>
+    </section>
   );
 }
 

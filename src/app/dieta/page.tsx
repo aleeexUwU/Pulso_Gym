@@ -4,7 +4,7 @@ import { AlertTriangle, CalendarDays, Check, CopyPlus, CupSoda, ChevronLeft, Che
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
-import { GraficaBarras } from "@/components/charts";
+import { GraficaBarras } from "@/components/charts-diferidos";
 import { BatidosRapidos } from "@/components/dieta/batidos-rapidos";
 import { CalendarioDieta } from "@/components/dieta/calendario-dieta";
 import { FotoLocal } from "@/components/dieta/foto-local";

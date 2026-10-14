@@ -157,6 +157,8 @@ export interface Settings {
   sonido: boolean;
   vibracion: boolean;
   biseries: boolean;
+  /** Aviso push opcional si a media tarde vas muy corto de proteína (máx. 1 al día). */
+  avisoProteina?: boolean;
   /** Máquinas y poleas antes que mancuernas (para quien aún no domina la técnica). */
   evitarMancuernas: boolean;
   /** Reparto del volumen: más torso o igual para todo. */
