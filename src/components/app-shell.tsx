@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className={cn("min-h-dvh", conNav && "lg:pl-64")}>
       {/* Móvil: ciempiés muy tenue en el fondo, quieto para no gastar batería. */}
       {conNav && (
-        <div aria-hidden className="pointer-events-none fixed -right-24 bottom-20 -z-[1] h-[30rem] w-80 opacity-[0.13] lg:hidden">
+        <div aria-hidden className="pointer-events-none fixed -right-28 bottom-16 -z-[1] h-[34rem] w-80 opacity-30 [mask-image:linear-gradient(to_left,black_35%,transparent_80%)] lg:hidden">
           <Ciempies recorrido="portada" segmentos={28} grosor={20} animado={false} className="size-full" />
         </div>
       )}

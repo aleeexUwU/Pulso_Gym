@@ -65,7 +65,7 @@ export function TecnicaContenido({ ejercicio }: { ejercicio: Exercise }) {
   const pref = ejercicio.alternativaPreferida ? getEjercicio(ejercicio.alternativaPreferida) : undefined;
   return (
     <div className="space-y-4">
-      <ExerciseImage ejercicio={ejercicio} className="aspect-[4/3] w-full" />
+      <ExerciseImage ejercicio={ejercicio} detalle className="aspect-[3/2] w-full" />
       <MusculosBadges ejercicio={ejercicio} />
       {ejercicio.equipo.length > 0 && (
         <p className="text-xs text-muted-foreground">

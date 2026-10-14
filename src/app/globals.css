@@ -452,3 +452,73 @@
     animation: none !important;
   }
 }
+
+/* ── Fotos de ejercicios: grabado en blanco y negro sobre hueso, con ritmo de repetición ── */
+.foto-ej {
+  background: oklch(0.9 0.014 85);
+  isolation: isolate;
+}
+.foto-ej-img {
+  filter: grayscale(1) contrast(1.04) brightness(1.12);
+  mix-blend-mode: multiply;
+}
+.foto-ej::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 28px oklch(0.14 0.004 20 / 0.45);
+  border-radius: inherit;
+}
+/*
+ * Una repetición en 4,2 s: inicio 0,9 s → contrae 0,75 s → aprieta 0,6 s →
+ * vuelve despacio 1,55 s → inicio. Lo mismo para la foto, las fases y la barra.
+ */
+.rep-final {
+  opacity: 0;
+  animation: rep-final 4.2s ease-in-out infinite;
+}
+@keyframes rep-final {
+  0%, 22% { opacity: 0; }
+  40%, 55% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+.rep-fase {
+  opacity: 0;
+  /* Propiedades por separado: el shorthand sin nombre se pierde al combinarlo con animation-name. */
+  animation-duration: 4.2s;
+  animation-timing-function: step-end;
+  animation-iteration-count: infinite;
+}
+.rep-fase-0 { animation-name: rep-fase-0; }
+.rep-fase-1 { animation-name: rep-fase-1; }
+.rep-fase-2 { animation-name: rep-fase-2; }
+.rep-fase-3 { animation-name: rep-fase-3; }
+@keyframes rep-fase-0 { 0% { opacity: 1; } 22% { opacity: 0; } 92% { opacity: 1; } }
+@keyframes rep-fase-1 { 0% { opacity: 0; } 22% { opacity: 1; } 40% { opacity: 0; } }
+@keyframes rep-fase-2 { 0% { opacity: 0; } 40% { opacity: 1; } 55% { opacity: 0; } }
+@keyframes rep-fase-3 { 0% { opacity: 0; } 55% { opacity: 1; } 92% { opacity: 0; } }
+.rep-barra {
+  transform-origin: left center;
+  animation: rep-barra 4.2s linear infinite;
+}
+@keyframes rep-barra {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.rep-pausada .rep-final,
+.rep-pausada .rep-fase,
+.rep-pausada .rep-barra {
+  animation-play-state: paused;
+}
+.rep-estatica {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rep-animada {
+    display: none;
+  }
+  .rep-estatica {
+    display: grid;
+  }
+}

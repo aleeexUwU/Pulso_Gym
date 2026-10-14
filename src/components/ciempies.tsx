@@ -77,6 +77,8 @@ export const RECORRIDOS = {
   portada: { ancho: 360, alto: 560, puntos: [[300, 40], [220, 120], [290, 240], [150, 330], [210, 450], [90, 530]] as P[] },
   /** Vertical ondulado, para el borde de la barra lateral. */
   lateral: { ancho: 120, alto: 900, puntos: [[60, 30], [85, 180], [35, 330], [80, 480], [40, 630], [75, 780], [55, 880]] as P[] },
+  /** Horizontal ondulado, para acompañar un título. */
+  horizontal: { ancho: 420, alto: 110, puntos: [[400, 52], [330, 30], [255, 70], [180, 38], [105, 66], [25, 48]] as P[] },
   /** Enroscado, para la pantalla de carga. */
   enroscado: {
     ancho: 200,
