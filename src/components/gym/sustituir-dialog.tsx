@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { MusculosBadges } from "@/components/exercise/technique";
 import { filtroGimnasio } from "@/lib/app/planificacion";
+import { useAjustes } from "@/lib/db/hooks";
 import { getEjercicio } from "@/lib/domain/exercises";
 import { alternativas } from "@/lib/domain/substitution";
 import type { Profile } from "@/lib/domain/types";
@@ -24,8 +25,9 @@ export function SustituirDialog({
   onElegir: (nuevoId: string) => void;
   onClose: () => void;
 }) {
+  const ajustes = useAjustes();
   const original = exerciseId ? getEjercicio(exerciseId) : undefined;
-  const lista = original ? alternativas(original.id, filtroGimnasio(perfil), ocupados).slice(0, 8) : [];
+  const lista = original ? alternativas(original.id, filtroGimnasio(perfil, ajustes), ocupados).slice(0, 8) : [];
   return (
     <Dialog open={!!original} onOpenChange={(a) => !a && onClose()}>
       <DialogContent className="max-h-[88dvh] overflow-y-auto rounded-3xl">

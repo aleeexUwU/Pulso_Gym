@@ -171,9 +171,33 @@ export default function Ajustes() {
 
       <Glass className="space-y-5">
         <SectionTitle>Volumen y progresión</SectionTitle>
-        <Fila titulo={`Mínimo de series por grupo y semana: ${ajustes.seriesMinimas}`} ayuda="Recomendado 10–15 para principiantes. Más series = sesiones más largas.">
+        <Fila titulo="Prioridad">
+          <Chips<Settings["prioridad"]>
+            valor={ajustes.prioridad}
+            onChange={(v) => ajustesYRegenerar({ prioridad: v as Settings["prioridad"] })}
+            opciones={[
+              { valor: "superior", etiqueta: "Tren superior" },
+              { valor: "equilibrado", etiqueta: "Todo igual" },
+            ]}
+          />
+        </Fila>
+        <Fila
+          titulo={`Mínimo de series por grupo y semana: ${ajustes.seriesMinimas}`}
+          ayuda={
+            ajustes.prioridad === "superior"
+              ? `Torso y brazo: ${ajustes.seriesMinimas + 2} (antebrazo ${ajustes.seriesMinimas}) · pierna: ${Math.max(4, Math.round(ajustes.seriesMinimas * 0.6))}. El torso se hace al principio de cada sesión.`
+              : "Recomendado 10–15 para principiantes. Más series = sesiones más largas."
+          }
+        >
           <Slider min={6} max={20} step={1} value={[ajustes.seriesMinimas]} onValueCommit={([v]) => ajustesYRegenerar({ seriesMinimas: v })} aria-label="Series mínimas por grupo" />
         </Fila>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>
+            Evitar mancuernas
+            <span className="block text-xs text-muted-foreground">Máquinas y poleas primero: guían el movimiento y es más fácil notar el músculo.</span>
+          </span>
+          <Switch checked={ajustes.evitarMancuernas} onCheckedChange={(v) => ajustesYRegenerar({ evitarMancuernas: v })} />
+        </label>
         <label className="flex items-center justify-between gap-3 text-sm">
           <span>
             Biseries (alternar torso y pierna)

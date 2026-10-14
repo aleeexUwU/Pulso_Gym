@@ -1,23 +1,24 @@
 "use client";
 
-import { Barcode, Camera, Keyboard, Loader2, PenLine, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { Barcode, Camera, Keyboard, Loader2, PenLine, Plus, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EscanerCodigo } from "@/components/dieta/escaner-codigo";
+import { ListaAlimentos } from "@/components/dieta/lista-alimentos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Aviso, Cargando, Chips, Glass, PageHeader, SectionTitle, Stepper } from "@/components/ui-kit";
+import { Aviso, Cargando, Chips, Glass, PageHeader, Stepper } from "@/components/ui-kit";
 import { analizarConIA, comprimirImagen, guardarComida, iaDisponible, TIPOS_COMIDA, tipoPorHora, totales } from "@/lib/app/dieta";
-import { buscarPorCodigo, type ProductoOFF } from "@/lib/app/openfoodfacts";
+import { buscarPorCodigo, itemDeProducto, type ProductoOFF } from "@/lib/app/openfoodfacts";
 import { useComidas } from "@/lib/db/hooks";
 import type { Comida, TipoComida } from "@/lib/db/types";
 import { hoyISO } from "@/lib/domain/dates";
-import { ALIMENTOS, nutrientesDe } from "@/lib/domain/nutrition/alimentos";
-import { analizarTexto, cambiarGramos, itemDeAlimento, normalizar, type ItemComida } from "@/lib/domain/nutrition/parser";
+import { nutrientesDe } from "@/lib/domain/nutrition/alimentos";
+import { analizarTexto, type ItemComida } from "@/lib/domain/nutrition/parser";
 import { cn } from "@/lib/utils";
 
 type Modo = "foto" | "codigo" | "texto" | "manual";
@@ -42,7 +43,6 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
   const [usarIA, setUsarIA] = useState(true);
   const [ia, setIa] = useState<{ ok: boolean; motivo?: string } | null>(null);
   const [cargando, setCargando] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
   const [producto, setProducto] = useState<ProductoOFF | null>(null);
   const [gramosProducto, setGramosProducto] = useState<number | null>(100);
   const [buscandoCodigo, setBuscandoCodigo] = useState(false);
@@ -54,11 +54,6 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
   useEffect(() => () => void (foto && URL.revokeObjectURL(foto.url)), [foto]);
 
   const t = totales([{ items } as Comida]);
-  const resultados = useMemo(() => {
-    const q = normalizar(busqueda);
-    if (q.length < 2) return [];
-    return ALIMENTOS.filter((a) => normalizar(a.nombre).includes(q) || a.alias.some((al) => normalizar(al).includes(q))).slice(0, 6);
-  }, [busqueda]);
 
   async function elegirFoto(f: File | undefined) {
     if (!f) return;
@@ -243,25 +238,7 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
                 className="h-12 w-full rounded-2xl"
                 disabled={!gramosProducto}
                 onClick={() => {
-                  const g = Math.max(1, gramosProducto ?? 100);
-                  const n = nutrientesDe(producto.por100, g);
-                  const r = (x: number) => Math.round(x * 10) / 10;
-                  setItems((xs) => [
-                    ...xs,
-                    {
-                      nombre: producto.marca ? `${producto.nombre} (${producto.marca})` : producto.nombre,
-                      gramos: g,
-                      por100: producto.por100,
-                      confianza: "alta",
-                      kcal: Math.round(n.kcal),
-                      proteinas: r(n.proteinas),
-                      carbohidratos: r(n.carbohidratos),
-                      grasas: r(n.grasas),
-                      fibra: r(n.fibra),
-                      azucares: r(n.azucares),
-                      sal: Math.round(n.sal * 100) / 100,
-                    },
-                  ]);
+                  setItems((xs) => [...xs, itemDeProducto(producto, gramosProducto ?? 100)]);
                   if (items.length === 0) setFuente("codigo");
                   setProducto(null);
                   toast.success("Añadido");
@@ -289,7 +266,7 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
             <span>
               Usar IA (más preciso)
               <span className="block text-xs text-muted-foreground">
-                {ia?.ok ? "Analiza con Claude." : (ia?.motivo ?? "Comprobando…")} Sin IA uso la tabla de alimentos del móvil.
+                {ia?.ok ? "Analiza con Gemini (o Claude de respaldo)." : (ia?.motivo ?? "Comprobando…")} Sin IA uso la tabla de alimentos del móvil.
               </span>
             </span>
             <Switch checked={usarIA && !!ia?.ok} disabled={!ia?.ok} onCheckedChange={setUsarIA} />
@@ -350,64 +327,7 @@ function Editor({ inicial, fecha }: { inicial: Comida | null; fecha: string }) {
         </Glass>
       )}
 
-      <Glass className="space-y-3">
-        <SectionTitle>Alimentos ({items.length})</SectionTitle>
-        {notasIA && <p className="rounded-xl bg-violet/10 p-2.5 text-xs leading-relaxed">{notasIA}</p>}
-        {items.length === 0 && <p className="text-sm text-muted-foreground">Aún no hay alimentos. Analiza, busca o añade a mano.</p>}
-        <ul className="space-y-3">
-          {items.map((it, i) => (
-            <li key={i} className="space-y-2 rounded-2xl bg-secondary/50 p-3">
-              <div className="flex items-start gap-2">
-                <Input
-                  aria-label="Nombre del alimento"
-                  value={it.nombre}
-                  onChange={(e) => setItems((xs) => xs.map((x, k) => (k === i ? { ...x, nombre: e.target.value } : x)))}
-                  className="h-10 flex-1 rounded-xl"
-                />
-                <Button variant="ghost" size="icon" className="text-destructive" aria-label="Quitar" onClick={() => setItems((xs) => xs.filter((_, k) => k !== i))}>
-                  <Trash2 />
-                </Button>
-              </div>
-              <Stepper
-                etiqueta="Gramos"
-                sufijo="g"
-                paso={10}
-                decimales={0}
-                valor={it.gramos}
-                onChange={(v) => v != null && v > 0 && setItems((xs) => xs.map((x, k) => (k === i ? cambiarGramos(x, v) : x)))}
-              />
-              <p className="text-xs tabular-nums text-muted-foreground">
-                <strong className="text-foreground">{Math.round(it.kcal)} kcal</strong> · P {it.proteinas} · C {it.carbohidratos} · G {it.grasas} · fibra {it.fibra} g
-                {it.confianza === "baja" && " · cantidad estimada, revísala"}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <label className="relative block">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <span className="sr-only">Buscar alimento</span>
-          <Input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Añadir de la tabla: arroz, pollo, yogur…" className="h-11 rounded-xl pl-9" />
-        </label>
-        {resultados.length > 0 && (
-          <ul className="space-y-1">
-            {resultados.map((a) => (
-              <li key={a.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-left text-sm"
-                  onClick={() => {
-                    setItems((xs) => [...xs, itemDeAlimento(a, a.unidad ?? a.racion, "media")]);
-                    setBusqueda("");
-                  }}
-                >
-                  <span>{a.nombre}</span>
-                  <span className="text-xs text-muted-foreground">{a.kcal} kcal/100 g</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Glass>
+      <ListaAlimentos items={items} setItems={setItems} notasIA={notasIA} />
 
       <div className="glass sticky bottom-2 flex items-center gap-3 p-3">
         <div className="flex-1 text-sm">

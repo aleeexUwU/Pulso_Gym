@@ -6,7 +6,7 @@ import { ajustesPorDefecto } from "@/lib/domain/defaults";
 import type { Settings } from "@/lib/domain/types";
 import { db } from "./db";
 import { leerKv, vivos, type ClaveKv, type ValoresKv } from "./repo";
-import type { AbsSession, ArmExercise, ArmSession, BodyWeight, Comida, ExerciseNote, Workout } from "./types";
+import type { AbsSession, ArmExercise, ArmSession, BodyWeight, Comida, ExerciseNote, Receta, Workout } from "./types";
 
 /** undefined = cargando · null = no existe. */
 export function useKv<K extends ClaveKv>(clave: K): ValoresKv[K] | null | undefined {
@@ -16,6 +16,13 @@ export function useKv<K extends ClaveKv>(clave: K): ValoresKv[K] | null | undefi
 export const usePerfil = () => useKv("perfil");
 export const usePlan = () => useKv("plan");
 export const useEvaluacionBrazo = () => useKv("evaluacionBrazo");
+
+/** Batidos y recetas guardados, los más usados primero. */
+export function useRecetas(): Receta[] | undefined {
+  const r = useKv("recetas");
+  if (r === undefined) return undefined;
+  return [...(r ?? [])].sort((a, b) => b.usos - a.usos || a.nombre.localeCompare(b.nombre));
+}
 
 /** Ajustes con valores por defecto para los campos que falten (versiones antiguas). */
 export function useAjustes(): Settings | undefined {

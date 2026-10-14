@@ -24,7 +24,7 @@ function useOnline() {
   );
 }
 
-const SIN_NAV = ["/bienvenida", "/gimnasio/sesion", "/abdominales/sesion", "/brazo/sesion", "/dieta/nueva"];
+const SIN_NAV = ["/bienvenida", "/gimnasio/sesion", "/abdominales/sesion", "/brazo/sesion", "/dieta/nueva", "/dieta/batidos/editar"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";

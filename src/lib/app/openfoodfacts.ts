@@ -1,4 +1,5 @@
-import type { Nutrientes } from "@/lib/domain/nutrition/alimentos";
+import { nutrientesDe, type Nutrientes } from "@/lib/domain/nutrition/alimentos";
+import type { ItemComida } from "@/lib/domain/nutrition/parser";
 
 /**
  * Open Food Facts: base de datos abierta de productos envasados (licencia ODbL).
@@ -56,4 +57,24 @@ export async function buscarPorCodigo(codigo: string): Promise<ProductoOFF | nul
   const j = (await res.json()) as { status: number; product?: Record<string, unknown> };
   if (j.status !== 1 || !j.product) return null;
   return productoDesdeOFF(limpio, j.product);
+}
+
+/** Alimento de una comida a partir de un producto escaneado y los gramos tomados. */
+export function itemDeProducto(producto: ProductoOFF, gramos: number): ItemComida {
+  const g = Math.max(1, gramos);
+  const n = nutrientesDe(producto.por100, g);
+  const r = (x: number) => Math.round(x * 10) / 10;
+  return {
+    nombre: producto.marca ? `${producto.nombre} (${producto.marca})` : producto.nombre,
+    gramos: g,
+    por100: producto.por100,
+    confianza: "alta",
+    kcal: Math.round(n.kcal),
+    proteinas: r(n.proteinas),
+    carbohidratos: r(n.carbohidratos),
+    grasas: r(n.grasas),
+    fibra: r(n.fibra),
+    azucares: r(n.azucares),
+    sal: Math.round(n.sal * 100) / 100,
+  };
 }

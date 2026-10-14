@@ -51,6 +51,8 @@ export interface FiltroEjercicios {
   excluidos: string[];
   /** Autoevaluación del brazo izquierdo: si apoyar el antebrazo es cómodo. */
   permiteApoyoAntebrazoIzq?: boolean;
+  /** Preferencia (no prohibición): las mancuernas quedan detrás de máquinas y poleas. */
+  evitarMancuernas?: boolean;
 }
 
 /** Usos de la mano izquierda que nunca se permiten en el módulo gimnasio, haya o no limitación. */

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CoverageBars } from "@/components/coverage-bars";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
@@ -38,6 +38,7 @@ import { clavesHechas } from "@/lib/app/resumen";
 import { useAbsSessions, useAjustes, useArmSessions, useEvaluacionBrazo, usePerfil, usePlan, useWorkouts } from "@/lib/db/hooks";
 import { diaSemana, formatoFecha, hoyISO, inicioSemana, NOMBRE_DIA, sumarDias } from "@/lib/domain/dates";
 import { ejercicio } from "@/lib/domain/exercises";
+import { VERSION_PLAN } from "@/lib/domain/generator";
 import { evaluarDescarga } from "@/lib/domain/progression";
 import type { PlanDay } from "@/lib/domain/types";
 import { planSemanal } from "@/lib/domain/weekly-plan";
@@ -55,6 +56,18 @@ export default function Gimnasio() {
   const [tecnica, setTecnica] = useState<string | null>(null);
   const [sustituir, setSustituir] = useState<{ id: string; dia: PlanDay } | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
+
+  // Un plan de una versión anterior del generador se rehace con las reglas nuevas.
+  const regenerando = useRef(false);
+  useEffect(() => {
+    if (!plan || (plan.version ?? 1) >= VERSION_PLAN || regenerando.current) return;
+    regenerando.current = true;
+    regenerarPlan()
+      .then(() => toast.success("Rutina actualizada: máquinas y poleas primero, y más trabajo de torso."))
+      .catch(() => {
+        regenerando.current = false;
+      });
+  }, [plan]);
 
   const hoy = hoyISO();
   const lunes = inicioSemana(hoy);
@@ -321,7 +334,7 @@ export default function Gimnasio() {
 
       <Glass>
         <SectionTitle>Cobertura muscular semanal</SectionTitle>
-        <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} />
+        <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} minimos={plan.minimos} />
       </Glass>
 
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />

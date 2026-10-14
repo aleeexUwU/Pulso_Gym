@@ -8,8 +8,13 @@ import { mejorAlternativaEnPlan, sustituirEnPlan } from "@/lib/domain/substituti
 import type { Plan, Profile, Settings } from "@/lib/domain/types";
 import { escribirKv, leerKv } from "@/lib/db/repo";
 
-export function filtroGimnasio(perfil: Profile): FiltroEjercicios {
-  return { equipo: perfil.equipo, limitaciones: perfil.limitaciones, excluidos: perfil.excluidos };
+export function filtroGimnasio(perfil: Profile, ajustes?: Pick<Settings, "evitarMancuernas">): FiltroEjercicios {
+  return {
+    equipo: perfil.equipo,
+    limitaciones: perfil.limitaciones,
+    excluidos: perfil.excluidos,
+    evitarMancuernas: ajustes?.evitarMancuernas,
+  };
 }
 
 /** Filtro del core en casa: material de casa y autoevaluación del brazo izquierdo. */
@@ -39,6 +44,8 @@ export function entradaGenerador(
     excluidos: perfil.excluidos,
     seriesMinimas: ajustes.seriesMinimas,
     biseries: ajustes.biseries,
+    evitarMancuernas: ajustes.evitarMancuernas,
+    prioridad: ajustes.prioridad,
     coberturaCasa: coberturaAbdominalesSemana(
       inicioSemana(hoy),
       ajustes.inicioAbdominales,
@@ -85,8 +92,8 @@ export async function marcarDolorEnPlan(exerciseId: string): Promise<string | nu
   await escribirKv("perfil", nuevoPerfil);
   const plan = await leerKv("plan");
   if (!plan) return null;
-  const alt = mejorAlternativaEnPlan(plan, exerciseId, filtroGimnasio(nuevoPerfil));
   const { ajustes, ev } = await contexto();
+  const alt = mejorAlternativaEnPlan(plan, exerciseId, filtroGimnasio(nuevoPerfil, ajustes));
   const input = entradaGenerador(nuevoPerfil, ajustes, ev);
   const base = alt
     ? sustituirEnPlan(plan, exerciseId, alt.id)

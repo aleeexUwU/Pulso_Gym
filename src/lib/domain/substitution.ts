@@ -36,8 +36,10 @@ export function alternativas(exerciseId: string, filtro: FiltroEjercicios, yaEnS
   );
   const sinSmith = pool.filter((e) => !e.smith);
   const lista = sinSmith.length ? sinSmith : pool;
+  const mancuerna = (e: Exercise) => (filtro.evitarMancuernas && e.tipoCarga === "mancuerna" ? 1 : 0);
   return lista.sort(
     (a, b) =>
+      mancuerna(a) - mancuerna(b) ||
       similitud(original, b) - similitud(original, a) ||
       Number(b.compuesto === original.compuesto) - Number(a.compuesto === original.compuesto) ||
       a.prioridad - b.prioridad,

@@ -32,27 +32,32 @@ export function CoverageBars({
   total,
   casa,
   minimo,
+  minimos,
   compacto = false,
 }: {
   total: Coverage;
   casa?: Coverage;
   minimo: number;
+  /** Mínimo por grupo cuando no es igual para todos (prioridad de torso). */
+  minimos?: Coverage;
   compacto?: boolean;
 }) {
-  const escala = Math.max(minimo * 2, 20);
-  const cortos = GRUPOS.filter((g) => estadoCobertura(total[g], minimo) === "corto");
+  const min = (g: MuscleGroup) => minimos?.[g] ?? minimo;
+  const variable = GRUPOS.some((g) => min(g) !== minimo);
+  const escala = Math.max(Math.max(...GRUPOS.map(min)) * 2, 20);
+  const cortos = GRUPOS.filter((g) => estadoCobertura(total[g], min(g)) === "corto");
   return (
     <div className="space-y-4">
       {cortos.length > 0 ? (
         <div className="flex gap-2 rounded-xl border border-warn/50 bg-warn/10 p-3 text-sm" role="alert">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
           <p>
-            <strong>Grupos cortos</strong> (menos de {minimo} series): {cortos.map((g) => GRUPO_NOMBRE[g]).join(", ")}.
+            <strong>Grupos cortos</strong> (por debajo de su mínimo): {cortos.map((g) => GRUPO_NOMBRE[g]).join(", ")}.
           </p>
         </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Check className="size-4 text-lime" /> Todos los grupos llegan al mínimo de {minimo} series.
+          <Check className="size-4 text-lime" /> Todos los grupos llegan a su mínimo{variable ? "" : ` de ${minimo} series`}.
         </p>
       )}
       {BLOQUES.map((b) => (
@@ -62,7 +67,8 @@ export function CoverageBars({
             {b.grupos.map((g) => {
               const v = total[g];
               const deCasa = casa?.[g] ?? 0;
-              const est = estadoCobertura(v, minimo);
+              const m = min(g);
+              const est = estadoCobertura(v, m);
               const E = ESTADO[est];
               const pct = Math.min(100, (v / escala) * 100);
               const pctCasa = Math.min(pct, (deCasa / escala) * 100);
@@ -72,7 +78,7 @@ export function CoverageBars({
                   <div
                     className="relative h-3 overflow-hidden rounded-[3px] bg-secondary"
                     role="meter"
-                    aria-label={`${GRUPO_NOMBRE[g]}: ${redondear1(v)} series de ${minimo} mínimas (${E.etiqueta})`}
+                    aria-label={`${GRUPO_NOMBRE[g]}: ${redondear1(v)} series de ${m} mínimas (${E.etiqueta})`}
                     aria-valuenow={redondear1(v)}
                     aria-valuemin={0}
                     aria-valuemax={escala}
@@ -90,7 +96,7 @@ export function CoverageBars({
                         title="Aportado por el core en casa"
                       />
                     )}
-                    <div className="absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${(minimo / escala) * 100}%` }} aria-hidden />
+                    <div className="absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${(m / escala) * 100}%` }} aria-hidden />
                   </div>
                   <span className={cn("flex items-center justify-end gap-1 font-semibold tabular-nums", E.texto)}>
                     <E.icono className="size-3.5 shrink-0" aria-hidden />
@@ -104,7 +110,7 @@ export function CoverageBars({
       ))}
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Series efectivas por semana: 1 por serie si el músculo es el principal y ½ o ¼ si trabaja de forma secundaria. La línea
-        blanca marca el mínimo ({minimo}); la parte punteada viene del core en casa. ✓ bien · ! justo · ⚠ corto (rayado) · 🔥 alto.
+        blanca marca el mínimo{variable ? " de cada grupo" : ` (${minimo})`}; la parte punteada viene del core en casa. ✓ bien · ! justo · ⚠ corto (rayado) · 🔥 alto.
       </p>
     </div>
   );

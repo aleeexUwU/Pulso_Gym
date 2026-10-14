@@ -1,10 +1,11 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CupSoda, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 import { GraficaBarras } from "@/components/charts";
+import { BatidosRapidos } from "@/components/dieta/batidos-rapidos";
 import { FotoLocal } from "@/components/dieta/foto-local";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, NumeroAnimado, PageHeader, SectionTitle } from "@/components/ui-kit";
@@ -158,6 +159,8 @@ function Dieta() {
         </Link>
       </Button>
 
+      <BatidosRapidos fecha={fecha} />
+
       <section className="space-y-3">
         <SectionTitle>Comidas</SectionTitle>
         {delDia.length === 0 && <p className="text-sm text-muted-foreground">Nada registrado este día.</p>}
@@ -176,6 +179,7 @@ function Dieta() {
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 text-sm font-medium leading-tight">
                           {c.fuente.startsWith("ia") && <Sparkles className="size-3.5 shrink-0 text-violet" aria-label="Analizado con IA" />}
+                          {c.fuente === "receta" && <CupSoda className="size-3.5 shrink-0 text-primary" aria-label="Batido guardado" />}
                           <span className="truncate">{c.descripcion || c.items.map((i) => i.nombre).join(", ")}</span>
                         </p>
                         <p className="text-xs text-muted-foreground">

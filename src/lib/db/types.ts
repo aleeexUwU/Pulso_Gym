@@ -121,10 +121,20 @@ export interface Comida extends SyncMeta {
   tipo: TipoComida;
   descripcion: string;
   items: ItemComida[];
-  fuente: "texto" | "ia-texto" | "ia-foto" | "manual" | "codigo";
+  fuente: "texto" | "ia-texto" | "ia-foto" | "manual" | "codigo" | "receta";
   notasIA?: string;
   /** Foto guardada solo en este dispositivo (tabla media). */
   fotoMediaId?: string;
+}
+
+/** Batido o receta guardada para añadirla a la dieta de un toque. */
+export interface Receta {
+  id: string;
+  nombre: string;
+  items: ItemComida[];
+  creadaEn: string;
+  /** Veces que se ha añadido (para ordenar por uso). */
+  usos: number;
 }
 
 /** Ficheros locales (vídeos propios). No se sincronizan. */

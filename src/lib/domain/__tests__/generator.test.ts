@@ -193,3 +193,36 @@ describe("limitaciones, dolor y sustituciones", () => {
     for (const g of GRUPOS) expect(reparado.cobertura[g], g).toBeGreaterThanOrEqual(10 - 1e-9);
   });
 });
+
+describe("principiante: sin mancuernas y prioridad de tren superior (3 días)", () => {
+  const input = entrada([1, 3, 5], { evitarMancuernas: true, prioridad: "superior" });
+  const plan = generarPlan(input);
+
+  it("no usa mancuernas si hay máquina o polea para el grupo", () => {
+    const conMancuerna = plan.dias.flatMap((d) => d.ejercicios).filter((pe) => ejercicio(pe.exerciseId).tipoCarga === "mancuerna");
+    expect(conMancuerna.map((pe) => pe.exerciseId)).toEqual([]);
+  });
+
+  it("torso con 2 series más que el mínimo y pierna con menos, todo cubierto", () => {
+    expect(plan.gruposSinCubrir).toEqual([]);
+    expect(plan.minimos?.pecho).toBe(12);
+    expect(plan.minimos?.cuadriceps).toBe(6);
+    for (const g of GRUPOS_GIMNASIO) expect(plan.cobertura[g] + 1e-9, g).toBeGreaterThanOrEqual(plan.minimos![g]);
+  });
+
+  it("pecho y dorsal se entrenan en cada sesión y el torso va antes que la pierna", () => {
+    for (const d of plan.dias) {
+      const primero = ejercicio(d.ejercicios[0].exerciseId);
+      expect(["pecho", "dorsal", "hombro_anterior"].some((g) => (primero.musculos[g as MuscleGroup] ?? 0) >= 1), d.nombre).toBe(true);
+      for (const g of ["pecho", "dorsal"] as MuscleGroup[]) {
+        expect(d.ejercicios.some((pe) => (ejercicio(pe.exerciseId).musculos[g] ?? 0) >= 1), `${d.nombre} ${g}`).toBe(true);
+      }
+    }
+  });
+
+  it("sesiones de duración razonable", () => {
+    for (const d of plan.dias) {
+      expect(d.duracionEstimadaMin).toBeLessThanOrEqual(90);
+    }
+  });
+});

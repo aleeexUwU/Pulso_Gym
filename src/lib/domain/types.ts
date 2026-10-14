@@ -152,6 +152,10 @@ export interface Settings {
   sonido: boolean;
   vibracion: boolean;
   biseries: boolean;
+  /** Máquinas y poleas antes que mancuernas (para quien aún no domina la técnica). */
+  evitarMancuernas: boolean;
+  /** Reparto del volumen: más torso o igual para todo. */
+  prioridad: "superior" | "equilibrado";
   /** Material que tienes en casa para el core (esterilla, banda...). */
   equipoCasa: Equipment[];
   /** Días de la semana del módulo brazo izquierdo (solo si está activado). */
@@ -192,6 +196,10 @@ export interface Plan {
   dias: PlanDay[];
   cobertura: Coverage;
   seriesMinimas: number;
+  /** Mínimo por grupo (con prioridad de torso no es igual para todos). */
+  minimos?: Coverage;
+  prioridad?: "superior" | "equilibrado";
+  version?: number;
   avisos: string[];
   gruposSinCubrir: MuscleGroup[];
 }

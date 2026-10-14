@@ -42,6 +42,8 @@ export function ajustesPorDefecto(hoy = hoyISO()): Settings {
     sonido: true,
     vibracion: true,
     biseries: true,
+    evitarMancuernas: true,
+    prioridad: "superior",
     equipoCasa: ["esterilla"],
     diasBrazo: [],
     tema: "oscuro",

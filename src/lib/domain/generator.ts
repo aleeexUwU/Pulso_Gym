@@ -31,11 +31,38 @@ export interface GeneratorInput {
   coberturaCasa?: Coverage;
   /** Agrupar aislamientos de torso y pierna en biseries para acortar la sesión. */
   biseries?: boolean;
+  /** Prioriza máquinas y poleas: las mancuernas solo si un grupo no tiene otra opción. */
+  evitarMancuernas?: boolean;
+  /** "superior": más series de torso y brazo, y se entrenan primero; pierna con menos volumen. */
+  prioridad?: Prioridad;
   id?: string;
   creadoEn?: string;
 }
 
+export type Prioridad = "superior" | "equilibrado";
+
+/** Versión del generador: si un plan guardado es de una versión anterior, se regenera. */
+export const VERSION_PLAN = 2;
+
 export const MAX_SERIES_EJERCICIO = 4;
+
+/**
+ * Mínimo semanal de series efectivas de un grupo. Con prioridad "superior" el torso
+ * sube 2 series (salvo el antebrazo, que ya recibe trabajo indirecto de sobra) y la
+ * pierna baja al ~60 % (suficiente para progresar empezando).
+ */
+export function minimoGrupo(g: MuscleGroup, input: Pick<GeneratorInput, "seriesMinimas" | "prioridad">): number {
+  if (input.prioridad !== "superior") return input.seriesMinimas;
+  if (TREN_SUPERIOR.includes(g)) return g === "antebrazo" ? input.seriesMinimas : input.seriesMinimas + 2;
+  if (TREN_INFERIOR.includes(g)) return Math.max(4, Math.round(input.seriesMinimas * 0.6));
+  return input.seriesMinimas;
+}
+
+export function minimosDe(input: Pick<GeneratorInput, "seriesMinimas" | "prioridad">): Coverage {
+  const m = coberturaVacia();
+  for (const g of Object.keys(m) as MuscleGroup[]) m[g] = minimoGrupo(g, input);
+  return m;
+}
 const SERIES_INICIALES = 2;
 
 interface Item {
@@ -50,18 +77,25 @@ interface Sesion {
   items: Item[];
 }
 
-export function filtroDe(input: Pick<GeneratorInput, "equipo" | "limitaciones" | "excluidos">): FiltroEjercicios {
-  return { equipo: input.equipo, limitaciones: input.limitaciones, excluidos: input.excluidos };
+export function filtroDe(
+  input: Pick<GeneratorInput, "equipo" | "limitaciones" | "excluidos" | "evitarMancuernas">,
+): FiltroEjercicios {
+  return { equipo: input.equipo, limitaciones: input.limitaciones, excluidos: input.excluidos, evitarMancuernas: input.evitarMancuernas };
 }
 
 /**
  * Ejercicios válidos para un grupo como músculo principal. La Smith solo entra
  * si no hay NINGUNA alternativa con el material configurado (último recurso).
+ * Con `evitarMancuernas`, las mancuernas solo entran si no hay máquina, polea ni otra opción.
  */
 export function candidatos(grupo: MuscleGroup, filtro: FiltroEjercicios): { lista: Exercise[]; ultimoRecurso: boolean } {
   const validos = EJERCICIOS_GIMNASIO.filter((e) => (e.musculos[grupo] ?? 0) >= 1 && ejercicioPermitido(e, filtro));
   const orden = (a: Exercise, b: Exercise) => a.prioridad - b.prioridad || Number(b.compuesto) - Number(a.compuesto);
   const sinSmith = validos.filter((e) => !e.smith).sort(orden);
+  if (filtro.evitarMancuernas) {
+    const sinMancuerna = sinSmith.filter((e) => e.tipoCarga !== "mancuerna");
+    if (sinMancuerna.length > 0) return { lista: sinMancuerna, ultimoRecurso: false };
+  }
   if (sinSmith.length > 0) return { lista: sinSmith, ultimoRecurso: false };
   return { lista: validos.filter((e) => e.smith).sort(orden), ultimoRecurso: true };
 }
@@ -179,7 +213,7 @@ function completarCobertura(sesiones: Sesion[], input: GeneratorInput, filtro: F
     const cov = cobertura(sesiones, extra);
     const deficit = new Map<MuscleGroup, number>();
     for (const g of GRUPOS_GIMNASIO) {
-      const d = input.seriesMinimas - cov[g];
+      const d = minimoGrupo(g, input) - cov[g];
       if (d > 1e-9) deficit.set(g, d);
     }
     if (deficit.size === 0) return [];
@@ -223,20 +257,27 @@ function completarCobertura(sesiones: Sesion[], input: GeneratorInput, filtro: F
     (mejor as { aplicar: () => void }).aplicar();
   }
   const cov = cobertura(sesiones, extra);
-  return GRUPOS_GIMNASIO.filter((g) => cov[g] + 1e-9 < input.seriesMinimas);
+  return GRUPOS_GIMNASIO.filter((g) => cov[g] + 1e-9 < minimoGrupo(g, input));
 }
 
 /**
- * Compuestos primero (pierna antes que torso) y aislamientos alternando torso/pierna.
- * Con biseries, cada aislamiento de torso se empareja con el de pierna que le sigue.
+ * Compuestos primero y aislamientos alternando torso/pierna. Con prioridad "superior"
+ * los compuestos de torso van antes que los de pierna (lo primero se hace con más
+ * energía); si no, la pierna va primero. Con biseries, cada aislamiento de torso se
+ * empareja con el de pierna que le sigue.
  */
-function ordenar(items: Item[], biseries: boolean): { item: Item; biserie?: string }[] {
+function ordenar(items: Item[], biseries: boolean, prioridad?: Prioridad): { item: Item; biserie?: string }[] {
   const esPierna = (e: Exercise) =>
     Object.entries(e.musculos).some(([g, w]) => (w ?? 0) >= 1 && TREN_INFERIOR.includes(g as MuscleGroup));
   const porPrioridad = (a: Item, b: Item) => a.ex.prioridad - b.ex.prioridad || b.series - a.series;
   const compuestos = items
     .filter((it) => it.ex.compuesto)
-    .sort((a, b) => Number(esPierna(b.ex)) - Number(esPierna(a.ex)) || porPrioridad(a, b));
+    .sort(
+      (a, b) =>
+        (prioridad === "superior"
+          ? Number(esPierna(a.ex)) - Number(esPierna(b.ex))
+          : Number(esPierna(b.ex)) - Number(esPierna(a.ex))) || porPrioridad(a, b),
+    );
   const aislPierna = items.filter((it) => !it.ex.compuesto && esPierna(it.ex)).sort(porPrioridad);
   const aislTorso = items.filter((it) => !it.ex.compuesto && !esPierna(it.ex)).sort(porPrioridad);
   const out: { item: Item; biserie?: string }[] = compuestos.map((item) => ({ item }));
@@ -256,7 +297,7 @@ function ordenar(items: Item[], biseries: boolean): { item: Item; biserie?: stri
 }
 
 function aPlanDay(s: Sesion, i: number, input: GeneratorInput): PlanDay {
-  const ejercicios: PlannedExercise[] = ordenar(s.items, input.biseries ?? true).map(({ item: it, biserie }) => ({
+  const ejercicios: PlannedExercise[] = ordenar(s.items, input.biseries ?? true, input.prioridad).map(({ item: it, biserie }) => ({
     exerciseId: it.ex.id,
     series: it.series,
     ...prescripcion(it.ex, input.objetivo, input.experiencia),
@@ -278,7 +319,7 @@ function aPlanDay(s: Sesion, i: number, input: GeneratorInput): PlanDay {
 export function avisosPlan(
   dias: PlanDay[],
   sinCubrir: MuscleGroup[],
-  input: Pick<GeneratorInput, "duracionMin" | "seriesMinimas">,
+  input: Pick<GeneratorInput, "duracionMin" | "seriesMinimas" | "prioridad">,
 ): string[] {
   const avisos: string[] = [];
   for (const d of dias) {
@@ -314,6 +355,9 @@ function construirPlan(sesiones: Sesion[], sinCubrir: MuscleGroup[], input: Gene
     dias,
     cobertura: sumarCobertura(coberturaDeDias(dias), casa),
     seriesMinimas: input.seriesMinimas,
+    minimos: minimosDe(input),
+    prioridad: input.prioridad ?? "equilibrado",
+    version: VERSION_PLAN,
     avisos: avisosPlan(dias, sinCubrir, input),
     gruposSinCubrir: sinCubrir,
   };
@@ -339,7 +383,7 @@ export function generarPlan(input: GeneratorInput): Plan {
   for (const s of sesiones) {
     for (const g of GRUPOS_GRANDES) {
       if (!gruposDe(s.enfoque).includes(g) || tieneDirecto(s, g)) continue;
-      if (cobertura(sesiones, extra)[g] >= input.seriesMinimas) continue;
+      if (cobertura(sesiones, extra)[g] >= minimoGrupo(g, input)) continue;
       const c = cand.get(g)!;
       const k = vecesGrupo.get(g) ?? 0;
       const e = elegir(c.lista, s, k);

@@ -1,7 +1,7 @@
 import type { ArmAssessment } from "@/lib/domain/left-arm";
 import type { Plan, Profile, Settings } from "@/lib/domain/types";
 import { db, type Coleccion } from "./db";
-import type { KvRow, SyncMeta } from "./types";
+import type { KvRow, Receta, SyncMeta } from "./types";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -44,13 +44,14 @@ export const vivos = <T extends SyncMeta>(rows: T[]) => rows.filter((r) => !r._d
 
 // ── Clave-valor: perfil, ajustes, plan, evaluación del brazo ──
 
-export type ClaveKv = "perfil" | "ajustes" | "plan" | "evaluacionBrazo";
+export type ClaveKv = "perfil" | "ajustes" | "plan" | "evaluacionBrazo" | "recetas";
 
 export interface ValoresKv {
   perfil: Profile;
   ajustes: Settings;
   plan: Plan;
   evaluacionBrazo: ArmAssessment;
+  recetas: Receta[];
 }
 
 export async function leerKv<K extends ClaveKv>(clave: K): Promise<ValoresKv[K] | undefined> {
