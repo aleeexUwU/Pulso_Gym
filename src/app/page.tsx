@@ -18,7 +18,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Ciempies } from "@/components/ciempies";
 import { CoverageBars } from "@/components/coverage-bars";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { TecnicaSheet } from "@/components/exercise/technique";
@@ -141,7 +140,6 @@ export default function Gimnasio() {
           <p className="mt-1 text-sm text-muted-foreground">
             Semana {semanas + 1} de entreno{semanas === 0 && ": calibrando tus pesos"}
           </p>
-          <Ciempies recorrido="horizontal" segmentos={24} grosor={15} className="mt-2 h-11 w-64 opacity-80" />
       </div>
 
       <AvisoSync />

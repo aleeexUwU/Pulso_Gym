@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
-import { Ciempies } from "@/components/ciempies";
+import { FondoHiganbana } from "@/components/fondo-higanbana";
 import { Logo } from "@/components/kakugan";
 import { useAjustes, usePerfil } from "@/lib/db/hooks";
 import { toque } from "@/lib/haptics";
@@ -59,12 +59,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={cn("min-h-dvh", conNav && "lg:pl-64")}>
-      {/* Móvil: ciempiés muy tenue en el fondo, quieto para no gastar batería. */}
-      {conNav && (
-        <div aria-hidden className="pointer-events-none fixed -right-28 bottom-16 -z-[1] h-[34rem] w-80 opacity-30 [mask-image:linear-gradient(to_left,black_35%,transparent_80%)] lg:hidden">
-          <Ciempies recorrido="portada" segmentos={28} grosor={20} animado={false} className="size-full" />
-        </div>
-      )}
+      {/* Fondo ilustrado: ciempiés a tinta y lirio araña carmesí, fijo detrás de todo. */}
+      <div
+        aria-hidden
+        className="fondo-higanbana pointer-events-none fixed bottom-0 right-[-22%] -z-[1] aspect-[3/5] h-[94dvh] sm:right-[-6%] lg:right-0 lg:h-dvh"
+      >
+        <FondoHiganbana className="size-full" />
+      </div>
       {conNav && (
         <aside
           aria-label="Navegación lateral"
@@ -96,13 +97,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </li>
             ))}
           </ul>
-          {/* El ciempiés recorre el borde de la barra, en blanco y negro. */}
-          <Ciempies
-            recorrido="lateral"
-            segmentos={34}
-            grosor={17}
-            className="pointer-events-none absolute -right-8 top-36 h-[52rem] w-32 opacity-45"
-          />
           <p className="relative z-10 mt-auto px-2 text-xs text-muted-foreground">
             {online ? "Tus datos se guardan en este equipo y en tu cuenta." : "Sin conexión: se sincroniza al volver."}
           </p>

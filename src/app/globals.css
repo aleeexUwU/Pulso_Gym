@@ -560,3 +560,23 @@
     animation: none;
   }
 }
+
+/* ── Fondo ilustrado: ciempiés a tinta + higanbana ── */
+:root {
+  --higanbana: oklch(0.6 0.22 25);
+  --higanbana-relleno: oklch(0.6 0.22 25 / 0.14);
+}
+.fondo-higanbana {
+  opacity: 0.32;
+  /* Se desvanece hacia la izquierda y abajo para no competir con el contenido. */
+  -webkit-mask-image: linear-gradient(to left, #000 40%, transparent 98%);
+  mask-image: linear-gradient(to left, #000 40%, transparent 98%);
+}
+@media (min-width: 1024px) {
+  .fondo-higanbana {
+    opacity: 0.3;
+  }
+}
+:root:not(.dark) .fondo-higanbana {
+  opacity: 0.22;
+}

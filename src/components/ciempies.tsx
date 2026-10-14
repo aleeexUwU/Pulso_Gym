@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
  * pasa por `puntos` (de la cabeza a la cola) en un viewBox `ancho × alto`.
  */
 
-type P = [number, number];
+export type P = [number, number];
 
 /** Curva Catmull-Rom que pasa por todos los puntos. */
-function curva(puntos: P[], u: number): P {
+export function curva(puntos: P[], u: number): P {
   const n = puntos.length - 1;
   const x = Math.min(n - 1e-6, Math.max(0, u * n));
   const i = Math.floor(x);
@@ -27,7 +27,7 @@ function curva(puntos: P[], u: number): P {
   return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])];
 }
 
-interface Segmento {
+export interface Segmento {
   x: number;
   y: number;
   /** Ángulo de la tangente (grados), apuntando hacia la cabeza. */
@@ -38,7 +38,7 @@ interface Segmento {
   l: number;
 }
 
-function segmentos(puntos: P[], n: number, grosor: number): Segmento[] {
+export function segmentos(puntos: P[], n: number, grosor: number): Segmento[] {
   // Tabla de longitud de arco para repartir los segmentos a la misma distancia.
   const M = 600;
   const tabla: { u: number; s: number; p: P }[] = [];
