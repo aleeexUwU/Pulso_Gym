@@ -19,6 +19,7 @@ import { borrar } from "@/lib/db/repo";
 import { diaSemana, formatoFecha, hoyISO, sumarDias } from "@/lib/domain/dates";
 import { consejosDelDia, objetivosDiarios, sugerenciaAjuste } from "@/lib/domain/nutrition/objetivos";
 import { toast } from "sonner";
+import { tieneManoLimitada } from "@/lib/domain/limitations";
 import { cn } from "@/lib/utils";
 
 function Barra({ etiqueta, valor, objetivo, unidad, maximo = false }: {
@@ -209,6 +210,9 @@ function Dieta() {
           <CompletarDia
             fecha={fecha}
             recetas={recetas}
+            limitaciones={[tieneManoLimitada(perfil.limitaciones) ? "Solo puede usar la mano derecha para cocinar." : "", perfil.notasLimitaciones]
+              .filter(Boolean)
+              .join(" ")}
             falta={{ kcal: obj.kcal - t.kcal, proteinas: obj.proteinas - t.proteinas, carbohidratos: obj.carbohidratos - t.carbohidratos, grasas: obj.grasas - t.grasas }}
           />
         )}

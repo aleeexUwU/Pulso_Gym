@@ -10,17 +10,35 @@ import { borrar, nuevoId } from "@/lib/db/repo";
 import type { Receta } from "@/lib/db/types";
 import { comidasRestantes, completarDia, type Falta } from "@/lib/domain/nutrition/completar";
 import { toque } from "@/lib/haptics";
+import { IdeasNevera } from "./ideas-nevera";
 
 const POR_PAGINA = 3;
 
 /** "¿Qué como para completar el día?": snacks o cenas que encajan con lo que falta hoy. */
-export function CompletarDia({ falta, fecha, recetas }: { falta: Falta; fecha: string; recetas: Receta[] }) {
+export function CompletarDia({
+  falta,
+  fecha,
+  recetas,
+  limitaciones,
+}: {
+  falta: Falta;
+  fecha: string;
+  recetas: Receta[];
+  limitaciones?: string;
+}) {
   const [pagina, setPagina] = useState(0);
   const ahora = new Date();
   const hora = ahora.getHours() + ahora.getMinutes() / 60;
-  const todas = completarDia(falta, hora, recetas, POR_PAGINA * 3);
   const restantes = comidasRestantes(hora);
+  const todas = completarDia(falta, hora, recetas, POR_PAGINA * 3);
   if (todas.length === 0) return null;
+  // Objetivo de la próxima comida (lo que falta repartido entre las que quedan).
+  const meta: Falta = {
+    kcal: Math.max(0, falta.kcal) / restantes,
+    proteinas: Math.max(0, falta.proteinas) / restantes,
+    carbohidratos: Math.max(0, falta.carbohidratos) / restantes,
+    grasas: Math.max(0, falta.grasas) / restantes,
+  };
   const paginas = Math.ceil(todas.length / POR_PAGINA);
   const visibles = todas.slice((pagina % paginas) * POR_PAGINA, (pagina % paginas) * POR_PAGINA + POR_PAGINA);
   const n = (x: number) => Math.round(x);
@@ -83,6 +101,7 @@ export function CompletarDia({ falta, fecha, recetas }: { falta: Falta; fecha: s
           </li>
         ))}
       </ul>
+      <IdeasNevera objetivo={meta} momento={meta.kcal >= 400 ? "comida" : "snack"} limitaciones={limitaciones} onAnadir={anadir} />
     </Glass>
   );
 }

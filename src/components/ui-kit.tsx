@@ -125,7 +125,7 @@ export function Stepper({
           whileTap={{ scale: 0.9 }}
           aria-label={`Restar ${paso} a ${etiqueta}`}
           onClick={() => fijar((valor ?? 0) - paso)}
-          className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-foreground active:bg-primary/20"
+          className="boton-tinta grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-foreground active:bg-primary/20"
         >
           <Minus className="size-5" />
         </motion.button>
@@ -150,7 +150,7 @@ export function Stepper({
           whileTap={{ scale: 0.9 }}
           aria-label={`Sumar ${paso} a ${etiqueta}`}
           onClick={() => fijar((valor ?? 0) + paso)}
-          className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-foreground active:bg-primary/20"
+          className="boton-tinta grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-foreground active:bg-primary/20"
         >
           <Plus className="size-5" />
         </motion.button>
@@ -189,7 +189,7 @@ export function Chips<T extends string | number>({
             onChange(arr.includes(o.valor) ? arr.filter((x) => x !== o.valor) : [...arr, o.valor]);
           }}
           className={cn(
-            "min-h-11 rounded-2xl border px-3.5 text-sm font-medium transition-colors",
+            "boton-tinta min-h-11 rounded-2xl border px-3.5 text-sm font-medium transition-colors",
             sel(o.valor)
               ? "border-primary/60 bg-primary/15 text-primary neon-border"
               : "border-border bg-secondary/60 text-foreground/85 hover:bg-secondary",

@@ -62,7 +62,7 @@ function Progreso() {
     <div className="space-y-5">
       <PageHeader titulo="Progreso" subtitulo="Historial, gráficas y rachas" />
       <Tabs value={tab} onValueChange={(v) => router.replace(`/progreso/?tab=${v}`)}>
-        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
           {[
             ["resumen", "Resumen"],
             ["calendario", "Calendario"],

@@ -649,3 +649,27 @@
     animation: none;
   }
 }
+
+/*
+ * Relieve de tinta en los botones: contorno negro muy fino (como el trazo del ciempiés),
+ * una luz arriba y una sombra abajo. Con :where() no pesa nada, así que cualquier sombra
+ * propia del botón (neon-border, anillo de foco) sigue mandando.
+ */
+@layer components {
+  :where([data-slot="button"], [role="tab"], .boton-tinta) {
+    box-shadow:
+      0 0 0 1px var(--ciempies-tinta),
+      inset 0 1px 0 oklch(1 0 0 / 0.12),
+      inset 0 -2px 0 oklch(0 0 0 / 0.28);
+  }
+  :where([data-slot="button"]):disabled {
+    box-shadow: 0 0 0 1px var(--ciempies-tinta);
+  }
+}
+/* La pestaña activa trae su propia sombra (utilidad de la librería): también con tinta. */
+[role="tab"][data-state="active"] {
+  box-shadow:
+    0 0 0 1px var(--ciempies-tinta),
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    inset 0 -2px 0 oklch(0 0 0 / 0.3);
+}
