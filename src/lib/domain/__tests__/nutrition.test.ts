@@ -129,3 +129,24 @@ describe("sugerencia de ajuste de calorías", () => {
     expect(sugerenciaAjuste(pesos.slice(0, 2), "ganar", kcal, 2830, "2026-10-14")).toBeNull();
   });
 });
+
+describe("completar el día", () => {
+  it("propone cenas si falta mucho y snacks si falta poco, con ids válidos", async () => {
+    const { completarDia } = await import("../nutrition/completar");
+    const cena = completarDia({ kcal: 800, proteinas: 50, carbohidratos: 90, grasas: 20 }, 20);
+    expect(cena.length).toBe(3);
+    expect(cena[0].momento).toBe("comida");
+    for (const p of cena) expect(Math.abs(p.despues.proteinas)).toBeLessThan(25);
+    const snack = completarDia({ kcal: 250, proteinas: 25, carbohidratos: 20, grasas: 5 }, 17);
+    expect(snack.every((p) => p.momento === "snack")).toBe(true);
+    expect(completarDia({ kcal: 50, proteinas: 3, carbohidratos: 5, grasas: 1 }, 21)).toEqual([]);
+  });
+});
+
+describe("completar el día por la mañana", () => {
+  it("no propone cubrir todo el día en una sola comida", async () => {
+    const { completarDia } = await import("../nutrition/completar");
+    const p = completarDia({ kcal: 2000, proteinas: 120, carbohidratos: 250, grasas: 60 }, 10);
+    for (const x of p) expect(x.total.kcal).toBeLessThan(900);
+  });
+});

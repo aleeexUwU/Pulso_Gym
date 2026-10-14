@@ -7,13 +7,14 @@ import { Suspense, useMemo, useState } from "react";
 import { GraficaBarras } from "@/components/charts-diferidos";
 import { BatidosRapidos } from "@/components/dieta/batidos-rapidos";
 import { CalendarioDieta } from "@/components/dieta/calendario-dieta";
+import { CompletarDia } from "@/components/dieta/completar-dia";
 import { FotoLocal } from "@/components/dieta/foto-local";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, NumeroAnimado, PageHeader, SectionTitle } from "@/components/ui-kit";
 import { repetirComida, TIPOS_COMIDA, totales } from "@/lib/app/dieta";
 import { guardarAjustes } from "@/lib/app/planificacion";
 import { guardarReceta } from "@/lib/app/recetas";
-import { useAjustes, useBodyweights, useComidas, usePerfil, usePlan } from "@/lib/db/hooks";
+import { useAjustes, useBodyweights, useComidas, usePerfil, usePlan, useRecetas } from "@/lib/db/hooks";
 import { borrar } from "@/lib/db/repo";
 import { diaSemana, formatoFecha, hoyISO, sumarDias } from "@/lib/domain/dates";
 import { consejosDelDia, objetivosDiarios, sugerenciaAjuste } from "@/lib/domain/nutrition/objetivos";
@@ -73,6 +74,7 @@ function Dieta() {
   const plan = usePlan();
   const comidas = useComidas();
   const pesos = useBodyweights();
+  const recetas = useRecetas();
   const [calendario, setCalendario] = useState(false);
   const hoy = hoyISO();
   const fecha = params.get("fecha") ?? hoy;
@@ -202,6 +204,13 @@ function Dieta() {
               Quitarlo
             </button>
           </p>
+        )}
+        {fecha === hoy && recetas && (
+          <CompletarDia
+            fecha={fecha}
+            recetas={recetas}
+            falta={{ kcal: obj.kcal - t.kcal, proteinas: obj.proteinas - t.proteinas, carbohidratos: obj.carbohidratos - t.carbohidratos, grasas: obj.grasas - t.grasas }}
+          />
         )}
         {obj.notas.map((n) => (
           <Aviso key={n}>{n}</Aviso>
