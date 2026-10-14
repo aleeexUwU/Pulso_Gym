@@ -1,11 +1,12 @@
 "use client";
 
-import { AlertTriangle, Check, CupSoda, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, CupSoda, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { GraficaBarras } from "@/components/charts";
 import { BatidosRapidos } from "@/components/dieta/batidos-rapidos";
+import { CalendarioDieta } from "@/components/dieta/calendario-dieta";
 import { FotoLocal } from "@/components/dieta/foto-local";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, NumeroAnimado, PageHeader, SectionTitle } from "@/components/ui-kit";
@@ -68,6 +69,7 @@ function Dieta() {
   const ajustes = useAjustes();
   const plan = usePlan();
   const comidas = useComidas();
+  const [calendario, setCalendario] = useState(false);
   const hoy = hoyISO();
   const fecha = params.get("fecha") ?? hoy;
 
@@ -101,13 +103,29 @@ function Dieta() {
           <Button variant="ghost" size="icon-lg" aria-label="Día anterior" onClick={() => irA(sumarDias(fecha, -1))}>
             <ChevronLeft />
           </Button>
-          <p className="font-heading text-2xl tracking-wide">
+          <button
+            type="button"
+            onClick={() => setCalendario(true)}
+            className="flex items-center gap-2 rounded-xl px-3 py-1.5 font-heading text-2xl tracking-wide hover:bg-secondary"
+            aria-label="Abrir el calendario"
+          >
+            <CalendarDays className="size-5 text-primary" aria-hidden />
             {fecha === hoy ? "Hoy" : formatoFecha(fecha, { weekday: "long", day: "numeric", month: "short" })}
-          </p>
+          </button>
           <Button variant="ghost" size="icon-lg" aria-label="Día siguiente" disabled={fecha >= hoy} onClick={() => irA(sumarDias(fecha, 1))}>
             <ChevronRight />
           </Button>
-      </div>
+        </div>
+        <CalendarioDieta
+          key={calendario ? fecha : "cerrado"}
+          abierto={calendario}
+          onOpenChange={setCalendario}
+          comidas={comidas}
+          fecha={fecha}
+          hoy={hoy}
+          objetivoKcal={obj.kcal}
+          onElegir={irA}
+        />
 
       <Glass className="space-y-4">
         <div className="flex items-end justify-between">
