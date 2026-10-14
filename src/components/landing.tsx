@@ -2,6 +2,7 @@
 
 import { Activity, Apple, Dumbbell, WifiOff } from "lucide-react";
 import { useState } from "react";
+import { Ciempies } from "@/components/ciempies";
 import { CuentaCard } from "@/components/cuenta-card";
 import { Kakugan } from "@/components/kakugan";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,14 @@ const QUE_HACE = [
 export function Landing({ onEmpezar }: { onEmpezar: () => void }) {
   const [entrar, setEntrar] = useState(false);
   return (
-    <div className="flex min-h-[calc(100dvh-2rem)] flex-col">
+    <div className="relative flex min-h-[calc(100dvh-2rem)] flex-col overflow-x-clip">
+      {/* Ciempiés en blanco y negro bajando por el lateral, detrás del texto. */}
+      <Ciempies
+        recorrido="portada"
+        segmentos={30}
+        grosor={20}
+        className="pointer-events-none absolute -right-24 top-40 h-[34rem] w-[22rem] opacity-35 lg:-right-10 lg:opacity-50"
+      />
       <div className="relative grid place-items-center pb-2 pt-6">
         {/* Halo carmesí detrás del ojo */}
         <div
@@ -44,12 +52,12 @@ export function Landing({ onEmpezar }: { onEmpezar: () => void }) {
         <Kakugan className="ojo-abrir relative w-[78%] max-w-sm" parpadeo={false} />
       </div>
 
-      <h1 className="mt-2 font-logo text-[clamp(2.4rem,11vw,3.6rem)] leading-none text-primary">VL3X-GYM</h1>
-      <p className="mt-3 max-w-[34ch] text-lg leading-snug text-foreground/90">
+      <h1 className="relative mt-2 font-logo text-[clamp(2.4rem,11vw,3.6rem)] leading-none text-primary">VL3X-GYM</h1>
+      <p className="relative mt-3 max-w-[34ch] text-lg leading-snug text-foreground/90">
         Tu entreno personal, pensado para hacerlo todo con el brazo derecho.
       </p>
 
-      <ul className="mt-7 space-y-5">
+      <ul className="relative mt-7 max-w-md space-y-5">
         {QUE_HACE.map(({ icono: Icono, titulo, texto }) => (
           <li key={titulo} className="flex gap-4">
             <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-[0.8rem_0.35rem_0.9rem_0.4rem] border border-primary/40 bg-primary/10 text-primary">
@@ -63,7 +71,7 @@ export function Landing({ onEmpezar }: { onEmpezar: () => void }) {
         ))}
       </ul>
 
-      <div className="mt-auto space-y-3 pt-8">
+      <div className="relative mt-auto space-y-3 pt-8 lg:max-w-md">
         {!entrar && (
           <>
             <Button className="h-14 w-full rounded-2xl text-lg font-bold" onClick={onEmpezar}>

@@ -3,6 +3,7 @@
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type HTMLMotionProps } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { Ciempies } from "@/components/ciempies";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,10 +37,10 @@ export function PageHeader({
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
             transition={{ type: "spring", stiffness: 500, damping: 40 }}
-            className="safe-top fixed inset-x-0 top-0 z-30 mx-auto max-w-xl border-b border-border bg-background/85 backdrop-blur-md"
+            className="safe-top fixed inset-x-0 top-0 z-30 mx-auto max-w-xl border-b border-border bg-background/85 backdrop-blur-md lg:hidden"
             aria-hidden
           >
-            <p className="px-4 py-2.5 font-display text-2xl leading-none">{titulo}</p>
+            <p className="safe-x py-2.5 font-display text-2xl leading-none">{titulo}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -238,12 +239,10 @@ export function Aviso({ tipo = "info", children, className }: {
 
 export function Cargando() {
   return (
-    <div className="grid min-h-[50dvh] place-items-center" aria-busy>
-      <motion.div
-        className="size-10 rounded-full border-2 border-primary/30 border-t-primary"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
-      />
+    <div className="grid min-h-[50dvh] place-items-center" aria-busy aria-label="Cargando">
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 6, ease: "linear" }}>
+        <Ciempies recorrido="enroscado" segmentos={16} grosor={15} className="size-20 opacity-80" />
+      </motion.div>
     </div>
   );
 }

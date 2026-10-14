@@ -107,29 +107,31 @@ export default function Gimnasio() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <Logo />
-        <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
-          <Link href="/ejercicios/">
-            <BookOpen />
-          </Link>
-        </Button>
-      </header>
+    <div className="space-y-5 lg:grid lg:items-start lg:gap-10 lg:space-y-0 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      {/* PC: a la izquierda el día de hoy; a la derecha la rutina. */}
+      <div className="space-y-5">
+        <header className="flex items-center justify-between">
+          <Logo className="lg:invisible" />
+          <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
+            <Link href="/ejercicios/">
+              <BookOpen />
+            </Link>
+          </Button>
+        </header>
 
-      <div>
-        <p className="text-sm text-muted-foreground">
-          {(() => {
-            const f = formatoFecha(hoy, { weekday: "long", day: "numeric", month: "long" });
-            return f.charAt(0).toUpperCase() + f.slice(1);
-          })()}
-        </p>
-        <h1 className="glitch font-display text-5xl leading-none" data-text={perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}>
-          {perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Semana {semanas + 1} de entreno{semanas === 0 && ": calibrando tus pesos"}
-        </p>
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {(() => {
+              const f = formatoFecha(hoy, { weekday: "long", day: "numeric", month: "long" });
+              return f.charAt(0).toUpperCase() + f.slice(1);
+            })()}
+          </p>
+          <h1 className="glitch font-display text-5xl leading-none" data-text={perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}>
+            {perfil.nombre ? `Hola, ${perfil.nombre}` : "Hoy"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Semana {semanas + 1} de entreno{semanas === 0 && ": calibrando tus pesos"}
+          </p>
       </div>
 
       <AvisoSync />
@@ -222,123 +224,126 @@ export default function Gimnasio() {
         </div>
       )}
 
-      <section>
-        <SectionTitle
-          accion={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              onClick={async () => {
-                await regenerarPlan();
-                toast.success("Rutina regenerada. El historial se mantiene.");
-              }}
-            >
-              <RefreshCw /> Regenerar
-            </Button>
-          }
-        >
-          Tu rutina
-        </SectionTitle>
-        <div className="space-y-3">
-          {plan.dias.map((d) => {
-            const open = abierto === d.id;
-            return (
-              <Glass key={d.id} className="p-0">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
-                  aria-expanded={open}
-                  onClick={() => setAbierto(open ? null : d.id)}
-                >
-                  <span>
-                    <span className="block text-xs text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
-                    <span className="block font-heading text-xl tracking-wide">{d.nombre}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {d.ejercicios.length} ejercicios · {d.ejercicios.reduce((t, e) => t + e.series, 0)} series · ~
-                      {d.duracionEstimadaMin} min
+      </div>
+      <div className="space-y-5">
+        <section>
+          <SectionTitle
+            accion={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={async () => {
+                  await regenerarPlan();
+                  toast.success("Rutina regenerada. El historial se mantiene.");
+                }}
+              >
+                <RefreshCw /> Regenerar
+              </Button>
+            }
+          >
+            Tu rutina
+          </SectionTitle>
+          <div className="space-y-3">
+            {plan.dias.map((d) => {
+              const open = abierto === d.id;
+              return (
+                <Glass key={d.id} className="p-0">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                    aria-expanded={open}
+                    onClick={() => setAbierto(open ? null : d.id)}
+                  >
+                    <span>
+                      <span className="block text-xs text-primary">{NOMBRE_DIA[d.diaSemana]}</span>
+                      <span className="block font-heading text-xl tracking-wide">{d.nombre}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {d.ejercicios.length} ejercicios · {d.ejercicios.reduce((t, e) => t + e.series, 0)} series · ~
+                        {d.duracionEstimadaMin} min
+                      </span>
                     </span>
-                  </span>
-                  <ChevronDown className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")} />
-                </button>
-                {open && (
-                  <motion.ol initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 px-3 pb-3">
-                    {d.ejercicios.map((pe, i) => {
-                      const e = ejercicio(pe.exerciseId);
-                      return (
-                        <li key={pe.exerciseId} className="rounded-2xl bg-secondary/50 p-2">
-                          <div className="flex gap-3">
-                            <button type="button" onClick={() => setTecnica(e.id)} aria-label={`Ver técnica de ${e.nombre}`}>
-                              <ExerciseImage ejercicio={e} animar={false} className="size-16 shrink-0" />
-                            </button>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium leading-tight">
-                                <span className="text-muted-foreground">{i + 1}. </span>
-                                {e.nombre}
-                              </p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {pe.series} × {pe.repsMin}–{pe.repsMax}
-                                {e.medida === "segundos" ? " s" : " reps"} · descanso {pe.descansoSeg}s · RIR {pe.rir}
-                              </p>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {pe.biserie && (
-                                  <span className="rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-semibold text-violet">
-                                    Biserie {pe.biserie}
-                                  </span>
-                                )}
-                                {pe.ultimoRecurso && (
-                                  <span className="flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-[10px] font-semibold text-warn">
-                                    <AlertTriangle className="size-3" /> Último recurso
-                                    {pe.alternativaPreferida && ` · mejor: ${ejercicio(pe.alternativaPreferida).nombre}`}
-                                  </span>
-                                )}
+                    <ChevronDown className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")} />
+                  </button>
+                  {open && (
+                    <motion.ol initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 px-3 pb-3">
+                      {d.ejercicios.map((pe, i) => {
+                        const e = ejercicio(pe.exerciseId);
+                        return (
+                          <li key={pe.exerciseId} className="rounded-2xl bg-secondary/50 p-2">
+                            <div className="flex gap-3">
+                              <button type="button" onClick={() => setTecnica(e.id)} aria-label={`Ver técnica de ${e.nombre}`}>
+                                <ExerciseImage ejercicio={e} animar={false} className="size-16 shrink-0" />
+                              </button>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium leading-tight">
+                                  <span className="text-muted-foreground">{i + 1}. </span>
+                                  {e.nombre}
+                                </p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  {pe.series} × {pe.repsMin}–{pe.repsMax}
+                                  {e.medida === "segundos" ? " s" : " reps"} · descanso {pe.descansoSeg}s · RIR {pe.rir}
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {pe.biserie && (
+                                    <span className="rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-semibold text-violet">
+                                      Biserie {pe.biserie}
+                                    </span>
+                                  )}
+                                  {pe.ultimoRecurso && (
+                                    <span className="flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-[10px] font-semibold text-warn">
+                                      <AlertTriangle className="size-3" /> Último recurso
+                                      {pe.alternativaPreferida && ` · mejor: ${ejercicio(pe.alternativaPreferida).nombre}`}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="mt-2 grid grid-cols-3 gap-1.5">
-                            <Button variant="ghost" size="sm" className="h-9 rounded-xl" onClick={() => setTecnica(e.id)}>
-                              <BookOpen /> Técnica
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 rounded-xl"
-                              onClick={() => setSustituir({ id: e.id, dia: d })}
-                            >
-                              <ArrowRightLeft /> Cambiar
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 rounded-xl text-destructive"
-                              onClick={async () => {
-                                const alt = await marcarDolorEnPlan(e.id);
-                                toast.warning(
-                                  alt
-                                    ? `${e.nombre} marcado con molestia. Sustituido por ${ejercicio(alt).nombre}.`
-                                    : `${e.nombre} marcado con molestia y retirado.`,
-                                );
-                              }}
-                            >
-                              <ShieldAlert /> Me duele
-                            </Button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </motion.ol>
-                )}
-              </Glass>
-            );
-          })}
-        </div>
-      </section>
+                            <div className="mt-2 grid grid-cols-3 gap-1.5">
+                              <Button variant="ghost" size="sm" className="h-9 rounded-xl" onClick={() => setTecnica(e.id)}>
+                                <BookOpen /> Técnica
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 rounded-xl"
+                                onClick={() => setSustituir({ id: e.id, dia: d })}
+                              >
+                                <ArrowRightLeft /> Cambiar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 rounded-xl text-destructive"
+                                onClick={async () => {
+                                  const alt = await marcarDolorEnPlan(e.id);
+                                  toast.warning(
+                                    alt
+                                      ? `${e.nombre} marcado con molestia. Sustituido por ${ejercicio(alt).nombre}.`
+                                      : `${e.nombre} marcado con molestia y retirado.`,
+                                  );
+                                }}
+                              >
+                                <ShieldAlert /> Me duele
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </motion.ol>
+                  )}
+                </Glass>
+              );
+            })}
+          </div>
+        </section>
 
-      <Glass>
-        <SectionTitle>Cobertura muscular semanal</SectionTitle>
-        <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} minimos={plan.minimos} />
-      </Glass>
+        <Glass>
+          <SectionTitle>Cobertura muscular semanal</SectionTitle>
+          <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} minimos={plan.minimos} />
+        </Glass>
 
+      </div>
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
       <SustituirDialog
         exerciseId={sustituir?.id ?? null}

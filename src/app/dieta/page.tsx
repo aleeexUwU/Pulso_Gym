@@ -90,22 +90,23 @@ function Dieta() {
   const irA = (f: string) => router.replace(f === hoy ? "/dieta/" : `/dieta/?fecha=${f}`);
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        titulo="Dieta"
-        subtitulo={`Objetivo: ${obj.objetivo === "ganar" ? "ganar músculo" : obj.objetivo === "perder" ? "perder grasa" : "mantener"} · ${obj.kcal} kcal`}
-      />
+    <div className="space-y-5 lg:grid lg:items-start lg:gap-10 lg:space-y-0 lg:grid-cols-2">
+      <div className="space-y-5">
+        <PageHeader
+          titulo="Dieta"
+          subtitulo={`Objetivo: ${obj.objetivo === "ganar" ? "ganar músculo" : obj.objetivo === "perder" ? "perder grasa" : "mantener"} · ${obj.kcal} kcal`}
+        />
 
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon-lg" aria-label="Día anterior" onClick={() => irA(sumarDias(fecha, -1))}>
-          <ChevronLeft />
-        </Button>
-        <p className="font-heading text-2xl tracking-wide">
-          {fecha === hoy ? "Hoy" : formatoFecha(fecha, { weekday: "long", day: "numeric", month: "short" })}
-        </p>
-        <Button variant="ghost" size="icon-lg" aria-label="Día siguiente" disabled={fecha >= hoy} onClick={() => irA(sumarDias(fecha, 1))}>
-          <ChevronRight />
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="icon-lg" aria-label="Día anterior" onClick={() => irA(sumarDias(fecha, -1))}>
+            <ChevronLeft />
+          </Button>
+          <p className="font-heading text-2xl tracking-wide">
+            {fecha === hoy ? "Hoy" : formatoFecha(fecha, { weekday: "long", day: "numeric", month: "short" })}
+          </p>
+          <Button variant="ghost" size="icon-lg" aria-label="Día siguiente" disabled={fecha >= hoy} onClick={() => irA(sumarDias(fecha, 1))}>
+            <ChevronRight />
+          </Button>
       </div>
 
       <Glass className="space-y-4">
@@ -153,81 +154,84 @@ function Dieta() {
         ))}
       </div>
 
-      <Button asChild className="h-14 w-full rounded-2xl text-base font-semibold">
-        <Link href={`/dieta/nueva/?fecha=${fecha}`}>
-          <Plus /> Añadir comida
-        </Link>
-      </Button>
+      </div>
+      <div className="space-y-5">
+        <Button asChild className="h-14 w-full rounded-2xl text-base font-semibold">
+          <Link href={`/dieta/nueva/?fecha=${fecha}`}>
+            <Plus /> Añadir comida
+          </Link>
+        </Button>
 
-      <BatidosRapidos fecha={fecha} />
+        <BatidosRapidos fecha={fecha} />
 
-      <section className="space-y-3">
-        <SectionTitle>Comidas</SectionTitle>
-        {delDia.length === 0 && <p className="text-sm text-muted-foreground">Nada registrado este día.</p>}
-        {TIPOS_COMIDA.map(({ valor, etiqueta }) => {
-          const lista = delDia.filter((c) => c.tipo === valor);
-          if (lista.length === 0) return null;
-          return (
-            <div key={valor} className="space-y-2">
-              <h3 className="text-xs text-muted-foreground">{etiqueta}</h3>
-              {lista.map((c) => {
-                const tc = totales([c]);
-                return (
-                  <Glass key={c.id} className="space-y-2 p-3">
-                    <div className="flex gap-3">
-                      {c.fotoMediaId && <FotoLocal mediaId={c.fotoMediaId} className="size-16 shrink-0" />}
-                      <div className="min-w-0 flex-1">
-                        <p className="flex items-center gap-1.5 text-sm font-medium leading-tight">
-                          {c.fuente.startsWith("ia") && <Sparkles className="size-3.5 shrink-0 text-violet" aria-label="Analizado con IA" />}
-                          {c.fuente === "receta" && <CupSoda className="size-3.5 shrink-0 text-primary" aria-label="Batido guardado" />}
-                          <span className="truncate">{c.descripcion || c.items.map((i) => i.nombre).join(", ")}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.hora} · <strong className="text-foreground">{Math.round(tc.kcal)} kcal</strong> · P {Math.round(tc.proteinas)} · C{" "}
-                          {Math.round(tc.carbohidratos)} · G {Math.round(tc.grasas)} g
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {c.items.map((i) => `${i.nombre} ${i.gramos} g`).join(" · ")}
-                        </p>
+        <section className="space-y-3">
+          <SectionTitle>Comidas</SectionTitle>
+          {delDia.length === 0 && <p className="text-sm text-muted-foreground">Nada registrado este día.</p>}
+          {TIPOS_COMIDA.map(({ valor, etiqueta }) => {
+            const lista = delDia.filter((c) => c.tipo === valor);
+            if (lista.length === 0) return null;
+            return (
+              <div key={valor} className="space-y-2">
+                <h3 className="text-xs text-muted-foreground">{etiqueta}</h3>
+                {lista.map((c) => {
+                  const tc = totales([c]);
+                  return (
+                    <Glass key={c.id} className="space-y-2 p-3">
+                      <div className="flex gap-3">
+                        {c.fotoMediaId && <FotoLocal mediaId={c.fotoMediaId} className="size-16 shrink-0" />}
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-1.5 text-sm font-medium leading-tight">
+                            {c.fuente.startsWith("ia") && <Sparkles className="size-3.5 shrink-0 text-violet" aria-label="Analizado con IA" />}
+                            {c.fuente === "receta" && <CupSoda className="size-3.5 shrink-0 text-primary" aria-label="Batido guardado" />}
+                            <span className="truncate">{c.descripcion || c.items.map((i) => i.nombre).join(", ")}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.hora} · <strong className="text-foreground">{Math.round(tc.kcal)} kcal</strong> · P {Math.round(tc.proteinas)} · C{" "}
+                            {Math.round(tc.carbohidratos)} · G {Math.round(tc.grasas)} g
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {c.items.map((i) => `${i.nombre} ${i.gramos} g`).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="flex flex-col">
+                          <Button asChild variant="ghost" size="icon" aria-label="Editar comida">
+                            <Link href={`/dieta/nueva/?id=${c.id}`}>
+                              <Pencil />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            aria-label="Borrar comida"
+                            onClick={() => confirm("¿Borrar esta comida?") && borrar("comidas", c.id)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <Button asChild variant="ghost" size="icon" aria-label="Editar comida">
-                          <Link href={`/dieta/nueva/?id=${c.id}`}>
-                            <Pencil />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          aria-label="Borrar comida"
-                          onClick={() => confirm("¿Borrar esta comida?") && borrar("comidas", c.id)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    </div>
-                  </Glass>
-                );
-              })}
-            </div>
-          );
-        })}
-      </section>
+                    </Glass>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </section>
 
-      <Glass>
-        <SectionTitle>Últimos 7 días</SectionTitle>
-        <p className="-mt-2 mb-2 text-xs text-muted-foreground">Calorías por día · objetivo {obj.kcal} kcal</p>
-        <GraficaBarras datos={semana} x="fecha" unidad="kcal" series={[{ clave: "kcal", nombre: "Calorías", color: "1" }]} />
-      </Glass>
+        <Glass>
+          <SectionTitle>Últimos 7 días</SectionTitle>
+          <p className="-mt-2 mb-2 text-xs text-muted-foreground">Calorías por día · objetivo {obj.kcal} kcal</p>
+          <GraficaBarras datos={semana} x="fecha" unidad="kcal" series={[{ clave: "kcal", nombre: "Calorías", color: "1" }]} />
+        </Glass>
 
-      <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-        Estimaciones orientativas, no sustituyen a un dietista-nutricionista. Ajusta el objetivo en{" "}
-        <Link href="/ajustes/" className="underline">
-          Ajustes
-        </Link>
-        .
-      </p>
+        <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+          Estimaciones orientativas, no sustituyen a un dietista-nutricionista. Ajusta el objetivo en{" "}
+          <Link href="/ajustes/" className="underline">
+            Ajustes
+          </Link>
+          .
+        </p>
+      </div>
     </div>
   );
 }

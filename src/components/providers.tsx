@@ -86,7 +86,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <TemaDesdeAjustes />
         <RecordatorioEnApp />
         {children}
-        <Toaster position="top-center" richColors closeButton />
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          mobileOffset={{ top: "calc(env(safe-area-inset-top) + 8px)", left: 12, right: 12 }}
+        />
       </MotionConfig>
     </ThemeProvider>
   );
