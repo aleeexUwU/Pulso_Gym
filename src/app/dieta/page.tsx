@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, Check, CupSoda, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, CopyPlus, CupSoda, ChevronLeft, ChevronRight, CircleAlert, Info, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -10,11 +10,14 @@ import { CalendarioDieta } from "@/components/dieta/calendario-dieta";
 import { FotoLocal } from "@/components/dieta/foto-local";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, NumeroAnimado, PageHeader, SectionTitle } from "@/components/ui-kit";
-import { TIPOS_COMIDA, totales } from "@/lib/app/dieta";
-import { useAjustes, useComidas, usePerfil, usePlan } from "@/lib/db/hooks";
+import { repetirComida, TIPOS_COMIDA, totales } from "@/lib/app/dieta";
+import { guardarAjustes } from "@/lib/app/planificacion";
+import { guardarReceta } from "@/lib/app/recetas";
+import { useAjustes, useBodyweights, useComidas, usePerfil, usePlan } from "@/lib/db/hooks";
 import { borrar } from "@/lib/db/repo";
 import { diaSemana, formatoFecha, hoyISO, sumarDias } from "@/lib/domain/dates";
-import { consejosDelDia, objetivosDiarios } from "@/lib/domain/nutrition/objetivos";
+import { consejosDelDia, objetivosDiarios, sugerenciaAjuste } from "@/lib/domain/nutrition/objetivos";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 function Barra({ etiqueta, valor, objetivo, unidad, maximo = false }: {
@@ -69,6 +72,7 @@ function Dieta() {
   const ajustes = useAjustes();
   const plan = usePlan();
   const comidas = useComidas();
+  const pesos = useBodyweights();
   const [calendario, setCalendario] = useState(false);
   const hoy = hoyISO();
   const fecha = params.get("fecha") ?? hoy;
@@ -81,7 +85,7 @@ function Dieta() {
     });
   }, [comidas, fecha]);
 
-  if (!perfil || !ajustes || !comidas || plan === undefined) return <Cargando />;
+  if (!perfil || !ajustes || !comidas || plan === undefined || pesos === undefined) return <Cargando />;
 
   const obj = objetivosDiarios(perfil, ajustes.dieta);
   const delDia = comidas.filter((c) => c.fecha === fecha).sort((a, b) => a.hora.localeCompare(b.hora));
@@ -90,6 +94,12 @@ function Dieta() {
   const entrenoHoy = !!plan?.dias.some((d) => d.diaSemana === diaSemana(fecha));
   const consejos = consejosDelDia(t, obj, hora, { entrenoHoy });
   const irA = (f: string) => router.replace(f === hoy ? "/dieta/" : `/dieta/?fecha=${f}`);
+  // Sugerencia de ajuste: peso de las últimas semanas frente a lo que se ha comido.
+  const kcalUltimos = Array.from({ length: 14 }, (_, i) => totales(comidas.filter((c) => c.fecha === sumarDias(hoy, -1 - i))).kcal);
+  const sugerencia =
+    fecha === hoy && !ajustes.dieta.kcalManual
+      ? sugerenciaAjuste(pesos ?? [], obj.objetivo, kcalUltimos, obj.kcal, hoy)
+      : null;
 
   return (
     <div className="space-y-5 lg:grid lg:items-start lg:gap-10 lg:space-y-0 lg:grid-cols-2">
@@ -167,6 +177,32 @@ function Dieta() {
             </div>
           </Aviso>
         ))}
+        {sugerencia && (
+          <Aviso tipo="info">
+            <p>
+              {sugerencia.motivo} Te propongo <strong>{sugerencia.delta > 0 ? "+" : ""}{sugerencia.delta} kcal</strong> al día.
+            </p>
+            <Button
+              size="sm"
+              className="mt-2 rounded-xl"
+              onClick={async () => {
+                await guardarAjustes({ dieta: { ...ajustes.dieta, ajusteKcal: (ajustes.dieta.ajusteKcal ?? 0) + sugerencia.delta } });
+                toast.success(`Objetivo ajustado ${sugerencia.delta > 0 ? "+" : ""}${sugerencia.delta} kcal`);
+              }}
+            >
+              Aplicar ajuste
+            </Button>
+          </Aviso>
+        )}
+        {(ajustes.dieta.ajusteKcal ?? 0) !== 0 && fecha === hoy && (
+          <p className="text-xs text-muted-foreground">
+            Incluye un ajuste de {ajustes.dieta.ajusteKcal! > 0 ? "+" : ""}
+            {ajustes.dieta.ajusteKcal} kcal por la evolución de tu peso.{" "}
+            <button type="button" className="underline" onClick={() => guardarAjustes({ dieta: { ...ajustes.dieta, ajusteKcal: 0 } })}>
+              Quitarlo
+            </button>
+          </p>
+        )}
         {obj.notas.map((n) => (
           <Aviso key={n}>{n}</Aviso>
         ))}
@@ -210,6 +246,30 @@ function Dieta() {
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {c.items.map((i) => `${i.nombre} ${i.gramos} g`).join(" · ")}
                           </p>
+                          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                            <button
+                              type="button"
+                              className="flex items-center gap-1 text-xs text-primary"
+                              onClick={async () => {
+                                const id = await repetirComida(c, hoy);
+                                toast.success("Añadida a hoy", { action: { label: "Deshacer", onClick: () => void borrar("comidas", id) } });
+                              }}
+                            >
+                              <CopyPlus className="size-3.5" /> Repetir hoy
+                            </button>
+                            <button
+                              type="button"
+                              className="flex items-center gap-1 text-xs text-muted-foreground"
+                              onClick={async () => {
+                                const nombre = prompt("Nombre de la receta", c.descripcion.slice(0, 40));
+                                if (!nombre?.trim()) return;
+                                await guardarReceta({ nombre, items: c.items });
+                                toast.success(`«${nombre.trim()}» guardada en tus batidos y recetas`);
+                              }}
+                            >
+                              <CupSoda className="size-3.5" /> Guardar como receta
+                            </button>
+                          </div>
                         </div>
                         <div className="flex flex-col">
                           <Button asChild variant="ghost" size="icon" aria-label="Editar comida">

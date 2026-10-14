@@ -115,3 +115,20 @@ export async function guardarComida(c: Omit<Comida, "updatedAt" | "_dirty" | "id
   }
   await guardar<Comida>("comidas", { ...c, id: c.id ?? nuevoId(), fotoMediaId });
 }
+
+/** Copia una comida a otro día a la hora actual. Devuelve el id nuevo (para deshacer). */
+export async function repetirComida(c: Comida, fecha: string): Promise<string> {
+  const d = new Date();
+  const id = nuevoId();
+  await guardarComida({
+    id,
+    fecha,
+    hora: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+    tipo: tipoPorHora(d.getHours() + d.getMinutes() / 60),
+    descripcion: c.descripcion,
+    items: c.items,
+    fuente: c.fuente,
+    notasIA: c.notasIA,
+  });
+  return id;
+}

@@ -295,3 +295,28 @@ export function aplicarRampa<T extends { series: number }>(pe: T, semanaPrograma
   if (semanaPrograma >= 2 || pe.series < 3) return pe;
   return { ...pe, series: pe.series - 1 };
 }
+
+/** Último registro (más reciente) de un ejercicio, o undefined si nunca se ha hecho. */
+export function ultimoRegistro(logs: ExerciseLog[], exerciseId: string): ExerciseLog | undefined {
+  return logs
+    .filter((l) => l.exerciseId === exerciseId && seriesHechas(l).length > 0)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+}
+
+/** "25 kg × 10 · 10 · 9" (o "25×10 · 27,5×8" si cambia el peso; "40 s · 35 s" si es por tiempo). */
+export function resumenSeries(l: ExerciseLog, medida: "reps" | "segundos" = "reps"): string {
+  const hechas = seriesHechas(l);
+  const num = (n: number) => String(n).replace(".", ",");
+  if (medida === "segundos") return hechas.map((s) => `${s.reps} s`).join(" · ");
+  const pesos = new Set(hechas.map((s) => s.pesoKg ?? 0));
+  if (pesos.size === 1) {
+    const p = hechas[0].pesoKg;
+    return `${p ? `${num(p)} kg × ` : ""}${hechas.map((s) => s.reps).join(" · ")}`;
+  }
+  return hechas.map((s) => `${num(s.pesoKg ?? 0)}×${s.reps}`).join(" · ");
+}
+
+/** Mejor 1RM estimado anterior de un ejercicio (0 si no hay historial con peso). */
+export function recordAnterior(logs: ExerciseLog[], exerciseId: string): number {
+  return Math.max(0, ...logs.filter((l) => l.exerciseId === exerciseId).map(mejorE1rm));
+}

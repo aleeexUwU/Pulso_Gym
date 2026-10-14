@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, SkipForward } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useCuentaAtras } from "@/lib/hooks/use-cuenta-atras";
 import { cn } from "@/lib/utils";
 
@@ -57,11 +58,19 @@ export function RestTimer({
   vibracion: boolean;
 }) {
   const hasta = descanso?.hasta ?? null;
+  const [aviso, setAviso] = useState(0);
   const restante = useCuentaAtras(hasta, () => {
     if (vibracion) vibrar();
     if (sonido) pitar();
+    setAviso((n) => n + 1);
     onFin();
   });
+  // El aviso visual se quita solo al cabo de 1,8 s.
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(0), 1800);
+    return () => clearTimeout(t);
+  }, [aviso]);
   // Progreso de la barra: una sola animación CSS (transform) por descanso, fluida y
   // sin re-renders. El retraso negativo la sitúa en el punto actual.
   const transcurrido = descanso ? Math.max(0, descanso.total - restante) : 0;
@@ -69,6 +78,12 @@ export function RestTimer({
   const ss = String(restante % 60).padStart(2, "0");
 
   return (
+    <>
+    {aviso > 0 && (
+      <div key={aviso} className="aviso-fin-descanso pointer-events-none fixed inset-0 z-[60] grid place-items-center" role="alert">
+        <p className="rounded-3xl bg-background/90 px-6 py-4 font-display text-4xl tracking-wide text-primary">¡Siguiente serie!</p>
+      </div>
+    )}
     <AnimatePresence>
       {descanso && (
         <motion.div
@@ -119,5 +134,6 @@ export function RestTimer({
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 }

@@ -125,3 +125,23 @@ describe("descarga y rampa", () => {
     expect(aplicarRampa({ series: 4 }, 3).series).toBe(4);
   });
 });
+
+describe("la última vez y récords", () => {
+  const l = (fecha: string, series: [number, number][]) => ({
+    fecha,
+    exerciseId: "x",
+    repsMin: 8,
+    repsMax: 12,
+    buenaTecnica: true,
+    series: series.map(([pesoKg, reps]) => ({ pesoKg, reps, hecho: true })),
+  });
+  it("devuelve el registro más reciente y lo resume", async () => {
+    const { ultimoRegistro, resumenSeries, recordAnterior } = await import("../progression");
+    const logs = [l("2026-10-01", [[20, 10]]), l("2026-10-08", [[25, 10], [25, 10], [25, 9]])];
+    expect(ultimoRegistro(logs, "x")?.fecha).toBe("2026-10-08");
+    expect(resumenSeries(logs[1])).toBe("25 kg × 10 · 10 · 9");
+    expect(resumenSeries(l("d", [[25, 10], [27.5, 8]]))).toBe("25×10 · 27,5×8");
+    expect(recordAnterior(logs, "x")).toBeCloseTo(25 * (1 + 10 / 30));
+    expect(recordAnterior(logs, "otro")).toBe(0);
+  });
+});

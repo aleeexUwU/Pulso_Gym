@@ -9,9 +9,11 @@ export interface AjustesDieta {
   /** Si se rellenan, sustituyen al cálculo automático. */
   kcalManual: number | null;
   proteinaManual: number | null;
+  /** Ajuste aceptado tras ver la evolución del peso (kcal que se suman al cálculo). */
+  ajusteKcal?: number;
 }
 
-export const AJUSTES_DIETA_POR_DEFECTO: AjustesDieta = { objetivo: "auto", kcalManual: null, proteinaManual: null };
+export const AJUSTES_DIETA_POR_DEFECTO: AjustesDieta = { objetivo: "auto", kcalManual: null, proteinaManual: null, ajusteKcal: 0 };
 
 export interface ObjetivosDia {
   kcal: number;
@@ -65,6 +67,7 @@ export function objetivosDiarios(
   const gasto = basal * factorActividad(perfil.dias.length);
   const objetivo = objetivoEfectivo(perfil, aj);
   let kcal = objetivo === "ganar" ? gasto * 1.1 : objetivo === "perder" ? Math.max(basal * 1.1, gasto * 0.85) : gasto;
+  kcal += aj.ajusteKcal ?? 0;
   if (aj.kcalManual) kcal = aj.kcalManual;
   kcal = Math.round(kcal / 10) * 10;
 
@@ -168,4 +171,58 @@ export function consejosDelDia(
     });
   }
   return out;
+}
+
+export interface SugerenciaAjuste {
+  delta: number;
+  /** Cambio de peso medido en kg por semana. */
+  ritmo: number;
+  motivo: string;
+}
+
+/** Pendiente (kg/día) de la recta que mejor se ajusta a los pesos (mínimos cuadrados). */
+function pendiente(puntos: { dia: number; kg: number }[]): number {
+  const n = puntos.length;
+  const mx = puntos.reduce((s, p) => s + p.dia, 0) / n;
+  const my = puntos.reduce((s, p) => s + p.kg, 0) / n;
+  const num = puntos.reduce((s, p) => s + (p.dia - mx) * (p.kg - my), 0);
+  const den = puntos.reduce((s, p) => s + (p.dia - mx) ** 2, 0);
+  return den ? num / den : 0;
+}
+
+/**
+ * ¿Toca ajustar las calorías? Mira el peso de las últimas 4 semanas (al menos 3 pesajes
+ * que abarquen 14 días) y solo sugiere si has cumplido el objetivo de kcal la mayoría de
+ * días registrados (si no, el problema no es el objetivo). Rangos orientativos:
+ * ganar músculo ≈ +0,1–0,5 kg/semana; perder grasa ≈ −0,25–1 kg/semana.
+ */
+export function sugerenciaAjuste(
+  pesos: { fecha: string; kg: number }[],
+  objetivo: ObjetivoPeso,
+  kcalPorDia: number[],
+  objetivoKcal: number,
+  hoy: string,
+): SugerenciaAjuste | null {
+  const dia = (f: string) => Math.round((Date.parse(f) - Date.parse(hoy)) / 86_400_000);
+  const recientes = pesos.filter((p) => dia(p.fecha) >= -28 && dia(p.fecha) <= 0).map((p) => ({ dia: dia(p.fecha), kg: p.kg }));
+  if (recientes.length < 3) return null;
+  const dias = recientes.map((p) => p.dia);
+  if (Math.max(...dias) - Math.min(...dias) < 14) return null;
+  const registrados = kcalPorDia.filter((k) => k > 0);
+  if (registrados.length < 7) return null;
+  const cumplidos = registrados.filter((k) => k >= objetivoKcal * 0.9).length / registrados.length;
+  const ritmo = Math.round(pendiente(recientes) * 7 * 100) / 100;
+  const r = (d: number, motivo: string): SugerenciaAjuste => ({ delta: d, ritmo, motivo });
+  const kg = (x: number) => `${x > 0 ? "+" : ""}${String(x).replace(".", ",")} kg/semana`;
+
+  if (objetivo === "ganar") {
+    if (ritmo < 0.1 && cumplidos >= 0.7) return r(150, `Tu peso va a ${kg(ritmo)} comiendo lo que toca: para ganar músculo conviene subir un poco.`);
+    if (ritmo > 0.6) return r(-100, `Subes a ${kg(ritmo)}: algo rápido, puede ser más grasa que músculo.`);
+  } else if (objetivo === "perder") {
+    if (ritmo > -0.2 && cumplidos >= 0.7) return r(-150, `Tu peso va a ${kg(ritmo)} cumpliendo el objetivo: para perder grasa hay que bajar un poco.`);
+    if (ritmo < -1) return r(150, `Bajas a ${kg(ritmo)}: demasiado rápido, puedes perder músculo.`);
+  } else if (Math.abs(ritmo) > 0.3 && cumplidos >= 0.7) {
+    return r(ritmo > 0 ? -100 : 100, `Para mantener, tu peso debería estar estable y va a ${kg(ritmo)}.`);
+  }
+  return null;
 }

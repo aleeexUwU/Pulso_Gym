@@ -110,3 +110,22 @@ describe("consejos", () => {
 function comidoVacio() {
   return { kcal: 0, proteinas: 0, carbohidratos: 0, grasas: 0, fibra: 0, azucares: 0, sal: 0 };
 }
+
+describe("sugerencia de ajuste de calorías", () => {
+  it("sugiere subir si al ganar el peso no se mueve y se cumplen las kcal", async () => {
+    const { sugerenciaAjuste } = await import("../nutrition/objetivos");
+    const pesos = [
+      { fecha: "2026-09-20", kg: 70 },
+      { fecha: "2026-09-27", kg: 70.1 },
+      { fecha: "2026-10-04", kg: 70 },
+      { fecha: "2026-10-11", kg: 70.05 },
+    ];
+    const kcal = Array.from({ length: 14 }, () => 2800);
+    const s = sugerenciaAjuste(pesos, "ganar", kcal, 2830, "2026-10-14");
+    expect(s?.delta).toBe(150);
+    // Sin cumplir las kcal, el problema no es el objetivo.
+    expect(sugerenciaAjuste(pesos, "ganar", kcal.map(() => 2000), 2830, "2026-10-14")).toBeNull();
+    // Pocos datos: nada.
+    expect(sugerenciaAjuste(pesos.slice(0, 2), "ganar", kcal, 2830, "2026-10-14")).toBeNull();
+  });
+});

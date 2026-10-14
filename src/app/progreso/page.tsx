@@ -14,7 +14,9 @@ import { Aviso, Cargando, Glass, PageHeader, SectionTitle, Stat } from "@/compon
 import { asistencia, ejerciciosRegistrados, evolucionBrazo, records, serieEjercicio, volumenSemana } from "@/lib/app/estadisticas";
 import { exportarCSV, exportarJSON } from "@/lib/app/exportar";
 import { clavesHechas, fechasDe } from "@/lib/app/resumen";
-import { useAbsSessions, useAjustes, useArmSessions, useBodyweights, useWorkouts } from "@/lib/db/hooks";
+import { useAbsSessions, useAjustes, useArmSessions, useBodyweights, useComidas, usePerfil, usePlan, useWorkouts } from "@/lib/db/hooks";
+import { objetivosDiarios } from "@/lib/domain/nutrition/objetivos";
+import { ResumenSemana } from "@/components/resumen-semana";
 import { borrar, guardar, nuevoId } from "@/lib/db/repo";
 import type { BodyWeight } from "@/lib/db/types";
 import { formatoFecha, hoyISO, inicioSemana, sumarDias } from "@/lib/domain/dates";
@@ -30,6 +32,9 @@ function Progreso() {
   const abs = useAbsSessions();
   const brazo = useArmSessions();
   const pesos = useBodyweights();
+  const comidas = useComidas();
+  const perfil = usePerfil();
+  const plan = usePlan();
   const [ejSel, setEjSel] = useState<string | null>(null);
   const [semana, setSemana] = useState(() => inicioSemana(hoyISO()));
   const [kg, setKg] = useState("");
@@ -37,7 +42,8 @@ function Progreso() {
 
   const hoy = hoyISO();
   const claves = useMemo(() => clavesHechas(workouts, abs, brazo), [workouts, abs, brazo]);
-  if (!ajustes || !workouts || !abs || !brazo || !pesos) return <Cargando />;
+  if (!ajustes || !workouts || !abs || !brazo || !pesos || !comidas || !perfil || plan === undefined) return <Cargando />;
+  const obj = objetivosDiarios(perfil, ajustes.dieta);
 
   const tab = params.get("tab") ?? "resumen";
   const fGym = fechasDe(claves, "gimnasio");
@@ -71,6 +77,17 @@ function Progreso() {
         </TabsList>
 
         <TabsContent value="resumen" className="mt-4 space-y-4">
+          <ResumenSemana
+            workouts={workouts}
+            abs={abs}
+            comidas={comidas}
+            pesos={pesos}
+            plan={plan}
+            objetivoKcal={obj.kcal}
+            objetivoProteina={obj.proteinas}
+            lunesActual={inicioSemana(hoy)}
+            hoy={hoy}
+          />
           <div className="grid grid-cols-2 gap-2">
             <Stat etiqueta="Racha actual" valor={<span className="flex items-center gap-1"><Flame className="size-5" />{racha(todas, hoy)}</span>} detalle="días con actividad" />
             <Stat etiqueta="Mejor racha" valor={mejorRacha(todas)} detalle="días" color="violet" />

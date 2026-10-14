@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { Kakugan } from "@/components/kakugan";
@@ -35,7 +35,17 @@ import { marcarDolorEnPlan } from "@/lib/app/planificacion";
 import { useAjustes, usePerfil, useWorkout, useWorkouts } from "@/lib/db/hooks";
 import type { Workout, WorkoutExercise, WorkoutSet } from "@/lib/db/types";
 import { ejercicio } from "@/lib/domain/exercises";
-import { incrementoPara, mejorE1rm, redondearPeso, type EstadoProgresion } from "@/lib/domain/progression";
+import {
+  e1rm,
+  incrementoPara,
+  mejorE1rm,
+  recordAnterior,
+  redondearPeso,
+  resumenSeries,
+  ultimoRegistro,
+  type EstadoProgresion,
+} from "@/lib/domain/progression";
+import { formatoFecha } from "@/lib/domain/dates";
 import type { LoadType } from "@/lib/domain/types";
 import { toque } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
@@ -103,6 +113,8 @@ function Sesion() {
   const [sustituir, setSustituir] = useState(false);
   const [verNotas, setVerNotas] = useState(false);
   const [flash, setFlash] = useState(0);
+  // Récords ya celebrados en esta sesión (uno por ejercicio).
+  const celebrados = useRef(new Set<string>());
   useWakeLock();
 
   // Mientras no se elija, el ejercicio actual es el primero con series pendientes.
@@ -170,6 +182,19 @@ function Sesion() {
     if (!yaEstaba) {
       setFlash((f) => f + 1);
       toque(15);
+      // ¿Récord? Se compara el 1RM estimado de esta serie con el mejor de sesiones anteriores.
+      const antes = recordAnterior(previos, ej!.exerciseId);
+      if (antes > 0 && borrador.pesoKg && borrador.reps && !celebrados.current.has(ej!.exerciseId)) {
+        const ahora = e1rm(borrador.pesoKg, borrador.reps);
+        if (ahora > antes + 0.01) {
+          celebrados.current.add(ej!.exerciseId);
+          toque(60);
+          toast.success(`🏆 ¡Nuevo récord en ${e.nombre}!`, {
+            description: `${String(borrador.pesoKg).replace(".", ",")} kg × ${borrador.reps} · 1RM estimado ${Math.round(ahora)} kg (antes ${Math.round(antes)}).`,
+            duration: 6000,
+          });
+        }
+      }
     }
     if (yaEstaba || !siguiente) return;
     const w = siguiente as Workout;
@@ -343,6 +368,16 @@ function Sesion() {
               </div>
             </div>
             <p className="rounded-2xl bg-secondary/50 p-2.5 text-sm leading-relaxed">{ej.mensaje}</p>
+            {(() => {
+              const ultimo = ultimoRegistro(previos, ej.exerciseId);
+              if (!ultimo) return null;
+              return (
+                <p className="flex flex-wrap items-baseline gap-x-2 rounded-2xl border border-border px-3 py-2 text-sm">
+                  <span className="text-xs text-muted-foreground">La última vez ({formatoFecha(ultimo.fecha)})</span>
+                  <strong className="tabular-nums">{resumenSeries(ultimo, e.medida)}</strong>
+                </p>
+              );
+            })()}
             {ej.estado === "calibracion" && (
               <p className="text-xs text-muted-foreground">
                 Anota el <strong>RIR</strong> (cuántas reps te quedaban): con 4 o más, la siguiente serie sube; con 2–3 ya

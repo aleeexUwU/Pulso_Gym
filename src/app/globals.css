@@ -615,3 +615,23 @@
     animation: none;
   }
 }
+
+/* Fin del descanso: borde rojo que late y mensaje grande (el iPhone no vibra desde la web). */
+.aviso-fin-descanso {
+  box-shadow: inset 0 0 0 6px var(--primary), inset 0 0 60px oklch(0.64 0.22 25 / 0.55);
+  animation: aviso-fin 1.8s ease-out both;
+}
+@keyframes aviso-fin {
+  0%, 30%, 60% { opacity: 1; }
+  15%, 45% { opacity: 0.35; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso-fin-descanso {
+    animation: aviso-fin-quieto 1.8s step-end both;
+  }
+  @keyframes aviso-fin-quieto {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}
