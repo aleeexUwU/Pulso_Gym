@@ -114,15 +114,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <WifiOff className="size-3.5" /> Sin conexión: todo se guarda en el móvil y se sincroniza después.
           </div>
         )}
-        <main className={cn("safe-top safe-x flex-1 pt-4 lg:px-10 lg:pt-10", ocultarNav ? "pb-safe-6" : "pb-nav lg:pb-12")}>
-          <motion.div
-            key={ruta}
-            initial={{ opacity: 0, x: 10, skewX: -3 }}
-            animate={{ opacity: [0, 1, 0.7, 1], x: [10, -3, 2, 0], skewX: [-3, 2, 0, 0] }}
-            transition={{ duration: 0.32, times: [0, 0.4, 0.7, 1] }}
-          >
+        <main className={cn("pt-safe safe-x flex-1 lg:px-10 lg:pt-10", ocultarNav ? "pb-safe-6" : "pb-nav lg:pb-12")}>
+          {/* Entrada con CSS: si la animación no llegara a correr, el contenido se ve igual. */}
+          <div key={ruta} className="entrada-pagina">
             {children}
-          </motion.div>
+          </div>
         </main>
         {conNav && (
           <nav

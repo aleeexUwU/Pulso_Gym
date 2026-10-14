@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   BatteryLow,
   BookOpen,
+  CalendarDays,
   ChevronDown,
   Clock,
   Info,
@@ -21,6 +22,7 @@ import { Ciempies } from "@/components/ciempies";
 import { CoverageBars } from "@/components/coverage-bars";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { TecnicaSheet } from "@/components/exercise/technique";
+import { CalendarioGimnasio } from "@/components/gym/calendario-gimnasio";
 import { SustituirDialog } from "@/components/gym/sustituir-dialog";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
@@ -58,6 +60,7 @@ export default function Gimnasio() {
   const [tecnica, setTecnica] = useState<string | null>(null);
   const [sustituir, setSustituir] = useState<{ id: string; dia: PlanDay } | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
+  const [calendario, setCalendario] = useState(false);
 
   // Un plan de una versión anterior del generador se rehace con las reglas nuevas.
   const regenerando = useRef(false);
@@ -113,11 +116,16 @@ export default function Gimnasio() {
       <div className="space-y-5">
         <header className="flex items-center justify-between">
           <Logo className="lg:invisible" />
-          <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
-            <Link href="/ejercicios/">
-              <BookOpen />
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Historial de entrenos" onClick={() => setCalendario(true)}>
+              <CalendarDays />
+            </Button>
+            <Button asChild variant="outline" size="icon-lg" className="rounded-2xl" aria-label="Biblioteca de ejercicios">
+              <Link href="/ejercicios/">
+                <BookOpen />
+              </Link>
+            </Button>
+          </div>
         </header>
 
         <div>
@@ -346,6 +354,14 @@ export default function Gimnasio() {
         </Glass>
 
       </div>
+      <CalendarioGimnasio
+        key={calendario ? "abierto" : "cerrado"}
+        abierto={calendario}
+        onOpenChange={setCalendario}
+        workouts={workouts}
+        abs={abs ?? []}
+        hoy={hoy}
+      />
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
       <SustituirDialog
         exerciseId={sustituir?.id ?? null}

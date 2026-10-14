@@ -279,6 +279,11 @@
     padding-top: env(safe-area-inset-top);
   }
   /* iPhone en horizontal: la muesca y las esquinas redondeadas van a los lados. */
+  /* Margen superior = zona de la hora/isla del iPhone + 1rem. Va en una sola clase
+     para que ninguna utilidad pt-* lo pise (antes pt-4 anulaba el margen de seguridad). */
+  .pt-safe {
+    padding-top: calc(env(safe-area-inset-top) + 1rem);
+  }
   .safe-x {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
@@ -537,4 +542,21 @@
 }
 .foto-mini-img.cargada {
   opacity: 1;
+}
+
+/* Entrada de cada pantalla: pequeño tirón con glitch. Empieza visible (opacidad 0,4), así
+   nunca se queda la pantalla en negro aunque el navegador no llegue a animar. */
+.entrada-pagina {
+  animation: entrada-pagina 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes entrada-pagina {
+  0% { opacity: 0.4; transform: translateX(10px) skewX(-3deg); }
+  40% { opacity: 1; transform: translateX(-3px) skewX(2deg); }
+  70% { transform: translateX(2px); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entrada-pagina {
+    animation: none;
+  }
 }
