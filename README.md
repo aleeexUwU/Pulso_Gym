@@ -2,9 +2,9 @@
 
 **App publicada:** https://vl3x-gym.vercel.app (cada push a `main` se despliega solo en Vercel).
 
-App web progresiva, instalable en el móvil y usable sin conexión, pensada para entrenar con una **mano zamba radial congénita en el brazo izquierdo**. Tiene tres módulos:
+App web progresiva, instalable en el móvil y usable sin conexión, para cualquier persona. Nació para entrenar con una mano izquierda limitada, y eso sigue siendo una opción: cada persona describe sus lesiones o limitaciones al personalizar la rutina y la app adapta los ejercicios. Tiene tres módulos:
 
-1. **Gimnasio** (principal): rutina de cuerpo completo; todo el tren superior se hace **solo con el brazo derecho** y nada carga la mano o la muñeca izquierda.
+1. **Gimnasio** (principal): rutina de cuerpo completo con ejercicios clásicos (barra, máquinas, poleas). Con la limitación «mano o brazo izquierdo limitado», el tren superior se hace **solo con el brazo derecho** y nada carga la mano izquierda.
 2. **Core en casa** (diario): 10–15 min sin material, con progresión semanal, racha y recordatorio.
 3. **Brazo izquierdo**: módulo **preparado pero vacío y desactivado** por defecto. Se activa en Ajustes.
 
@@ -41,7 +41,7 @@ Otros scripts: `npm run imagenes` (vuelve a descargar las imágenes de ejercicio
 ## Qué hace
 
 ### Gimnasio
-- **Onboarding**: aviso médico, edad, peso, altura, sexo, experiencia, objetivo (fuerza / hipertrofia / salud), días y cuáles, duración, material y limitaciones (la mano zamba izquierda viene precargada).
+- **Onboarding**: aviso médico, edad, peso, altura, sexo, experiencia, objetivo (fuerza / hipertrofia / salud), días y cuáles, duración, material y lesiones/limitaciones (ninguna marcada: se describen con palabras y la app sugiere qué adaptar).
 - **Generador determinista** (`src/lib/domain/generator.ts`, sin IA de pago):
   - 2–3 días: cuerpo completo · 4 días: torso/pierna · 5–6 días: torso/pierna (+ cuerpo completo).
   - Garantiza un **mínimo de series efectivas por semana para los 17 grupos** (por defecto 10, ajustable de 6 a 20): pecho, dorsal, espalda alta/trapecio, hombro anterior/lateral/posterior, bíceps, tríceps, antebrazo, cuádriceps, isquios, glúteos, aductores, abductores, gemelos, lumbar y core (este último desde el módulo de casa, que también cuenta).
@@ -59,7 +59,7 @@ Otros scripts: `npm run imagenes` (vuelve a descargar las imágenes de ejercicio
 - **Modo "en el gimnasio"**: una mano, botones grandes, objetivo y lo realizado por serie (peso, reps, RIR opcional), temporizador de descanso con vibración y pitido, biseries guiadas, notas por ejercicio, pantalla siempre encendida, guardado instantáneo y offline.
 
 ### Core en casa
-Rutina diaria variada (recto, oblicuos, transverso/estabilidad y lumbar), sin apoyar peso en la mano izquierda. Progresión semanal de reps/segundos y paso a variantes más difíciles. Sesión guiada con temporizador de trabajo/descanso y contador, racha, calendario e historial. **Recordatorio diario** (ver decisiones).
+Rutina diaria variada (recto, oblicuos, transverso/estabilidad y lumbar), adaptada a las limitaciones marcadas. Progresión semanal de reps/segundos y paso a variantes más difíciles. Sesión guiada con temporizador de trabajo/descanso y contador, racha, calendario e historial. **Recordatorio diario** (ver decisiones).
 
 ### Brazo izquierdo
 Desactivado por defecto y fuera de la navegación y del plan semanal hasta activarlo. Al activarlo: autoevaluación guiada (agarre, codo, hombro, apoyo del antebrazo, dolor), ejercicios propios (nombre, descripción, series/reps o tiempo, carga, enlace a vídeo o vídeo propio), catálogo de ideas que **no se carga** salvo que lo importes (filtrado por la autoevaluación), sesiones con **escala de dolor 0–10** (aviso por encima de 3) e historial y gráficas propios. La autoevaluación también decide si el core puede incluir plancha sobre antebrazos.
@@ -67,7 +67,7 @@ Desactivado por defecto y fuera de la navegación y del plan semanal hasta activ
 ### Dieta
 Registro de comidas de cuatro formas: **foto** (IA), **código de barras** (Open Food Facts, gratis), **texto** (tabla local de ~95 alimentos, sin conexión; o IA si está activa) y **manual**. Objetivos diarios con Mifflin-St Jeor según peso, altura, edad, días de entreno y objetivo (ganar / mantener / perder), y avisos de si te falta comer, te falta proteína o te has pasado.
 
-La IA vive en la Edge Function `supabase/functions/analizar-comida`: usa **Google Gemini** (nivel gratuito; Google puede usar ese contenido para mejorar sus productos) y, si no hay clave o se agota el límite, **Claude Haiku 5.5** (~0,2 céntimos por foto). Secretos en Supabase: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` (opcional), `ALLOWED_EMAILS` (obligatorio: emails que pueden usarla) y opcionalmente `PROVEEDOR_IA` / `GEMINI_MODEL`. Publicar: `npx supabase functions deploy analizar-comida --project-ref <ref>`.
+La IA vive en la Edge Function `supabase/functions/analizar-comida`: usa **Google Gemini** (nivel gratuito; Google puede usar ese contenido para mejorar sus productos) y, si no hay clave o se agota el límite, **Claude Haiku 5.5** (~0,2 céntimos por foto). Secretos en Supabase: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` (opcional), y el acceso se da en la tabla **`public.ia_autorizados`** (añade el email a mano desde Supabase; la app solo puede leer su propia fila) y opcionalmente `PROVEEDOR_IA` / `GEMINI_MODEL`. Publicar: `npx supabase functions deploy analizar-comida --project-ref <ref>`.
 
 ### Progreso
 Calendario unificado, historial por sesión, gráficas (peso y 1RM estimado por ejercicio, volumen semanal por grupo, asistencia), récords, rachas, peso corporal opcional y evolución del brazo izquierdo. Cada gráfica tiene vista de tabla. Exportación a **CSV** (por módulo) y **JSON** (copia completa, también restaurable).
@@ -79,7 +79,8 @@ Calendario unificado, historial por sesión, gráficas (peso y 1RM estimado por 
 - **Supabase**: una única tabla `registros` (colección + id + JSON) con **Row Level Security** por usuario (`supabase/migrations`). Es más simple y robusta para sincronizar documentos que tener una tabla por entidad. Los vídeos propios del brazo izquierdo **no se suben** (se quedan en el dispositivo).
 - **Service worker propio** (`scripts/sw-template.js` + `scripts/build-sw.mjs`) en lugar de un plugin: precache de páginas, JS, CSS, fuentes e iconos; imágenes de técnica en segundo plano. Next 16 pide algunos payloads RSC de precarga con un nombre que la exportación estática no genera (404 inofensivos): **no** hay que "arreglarlo" copiando ficheros, porque entonces la navegación pierde los parámetros de la URL (`?id=`).
 - **Volumen con 2 días**: cubrir 10 series de los 17 grupos en 2 sesiones da sesiones de ~110 min (ya con biseries). La app lo avisa y propone: 3 días (~75 min) o mínimo de 8 series (~90 min con 2 días). Por defecto se respeta lo pedido (10).
-- **Recordatorio**: una PWA no puede programar una notificación exacta con la app cerrada sin servidor de push. Se combina *Periodic Background Sync* (Android/Chrome con la app instalada, no al minuto exacto), aviso al abrir la app y un **evento de calendario `.ics` diario** como alternativa fiable (sobre todo en iPhone).
+- **Recordatorio**: **Web Push** con la cuenta iniciada (en iPhone, con la app añadida a la pantalla de inicio, iOS 16.4+). La tabla `suscripciones_push` guarda cada dispositivo; `pg_cron` llama cada 15 min a la función `enviar-recordatorios` (cabecera `x-cron-secret`), que avisa a la hora elegida solo si ese día falta el gimnasio o el core. Secretos: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`. Sin push: *Periodic Background Sync* (Android), aviso al abrir la app y evento de calendario `.ics`.
+- **Adaptar con IA**: función `adaptar-rutina` (misma autorización que la dieta): lee lo que cuenta la persona y propone limitaciones y ejercicios a quitar; la persona decide si lo aplica.
 - **Remo con pecho apoyado** en vez del remo clásico, patada de tríceps con pecho apoyado, hiperextensiones con brazos cruzados, etc.: todo para no cargar la muñeca izquierda.
 - **Estética**: oscura de inspiración emo/urbana (negro y carbón, carmesí, blanco hueso, morado), texturas grunge, panal de hexágonos, salpicaduras discretas, bordes rasgados y un ojo carmesí estilizado de diseño propio. **Inspiración libre: no usa logos, personajes ni imágenes oficiales de ninguna obra.** Títulos en Bebas Neue con glitch, logo en Nosifer y texto en Inter. Las animaciones (glitch, destello rojo al completar una serie, parpadeo del temporizador, transiciones) respetan `prefers-reduced-motion`. Los estados nunca dependen solo del color (iconos, texto y rayados). La paleta de gráficas está validada para daltonismo y contraste.
 - **shadcn/ui** (Radix), **Recharts**, **Framer Motion**, **Tailwind CSS 4**, **Next.js 16** (App Router) y **TypeScript**.
