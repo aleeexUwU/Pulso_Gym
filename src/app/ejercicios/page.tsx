@@ -46,7 +46,7 @@ function Biblioteca() {
 
   return (
     <div className="space-y-4">
-      <PageHeader titulo="Biblioteca" subtitulo={`${EJERCICIOS.length} ejercicios adaptados con técnica en español`} />
+      <PageHeader titulo="Biblioteca" subtitulo={`${EJERCICIOS.length} ejercicios con técnica en español`} />
       <label className="relative block">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <span className="sr-only">Buscar ejercicio</span>

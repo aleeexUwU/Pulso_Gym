@@ -9,7 +9,8 @@ import { useAbsSessions, useAjustes } from "@/lib/db/hooks";
 import { hoyISO } from "@/lib/domain/dates";
 import { mostrarNotificacion, sincronizarRecordatorioConSW } from "@/lib/pwa/recordatorio";
 import { configurarHaptica } from "@/lib/haptics";
-import { iniciarSyncAutomatica } from "@/lib/sync/sync";
+import { conservarAjustesAntiguos } from "@/lib/app/planificacion";
+import { iniciarSyncAutomatica, suscribirSync } from "@/lib/sync/sync";
 
 /** Registra el service worker en producción y avisa cuando hay versión nueva. */
 function useServiceWorker() {
@@ -79,6 +80,14 @@ function RecordatorioEnApp() {
 export function Providers({ children }: { children: React.ReactNode }) {
   useServiceWorker();
   useEffect(() => iniciarSyncAutomatica(), []);
+  // Conserva los ajustes de quien ya usaba la app antes de que fuera para cualquiera
+  // (al abrir y cada vez que se descargan datos de la cuenta).
+  useEffect(() => {
+    void conservarAjustesAntiguos();
+    return suscribirSync((e) => {
+      if (e.tipo === "ok") void conservarAjustesAntiguos();
+    });
+  }, []);
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       {/* Respeta prefers-reduced-motion en todas las animaciones de Framer Motion. */}

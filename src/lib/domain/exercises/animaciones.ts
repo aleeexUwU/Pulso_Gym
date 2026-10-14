@@ -1,4 +1,5 @@
 import type { Exercise } from "../types";
+import { ANIMACION_BILATERAL } from "./bilateral";
 
 /**
  * Animaciones de ExerciseDB (API v1 gratuita, https://oss.exercisedb.dev): un muñeco 3D
@@ -112,6 +113,7 @@ const ANIMACION: Record<string, string> = {
   nadador: "SP3hUez",
   puente_gluteo: "u0cNiij",
   puente_gluteo_una_pierna_casa: "rmEukuS",
+  ...ANIMACION_BILATERAL,
 };
 
 export const ORIGEN_ANIMACIONES = "https://static.exercisedb.dev";

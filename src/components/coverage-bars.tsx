@@ -7,8 +7,8 @@ import { GRUPO_NOMBRE, GRUPOS, TREN_INFERIOR, TREN_SUPERIOR } from "@/lib/domain
 import type { Coverage, MuscleGroup } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
-const BLOQUES: { titulo: string; grupos: MuscleGroup[] }[] = [
-  { titulo: "Tren superior (brazo derecho)", grupos: TREN_SUPERIOR },
+const bloques = (manoLimitada: boolean): { titulo: string; grupos: MuscleGroup[] }[] => [
+  { titulo: manoLimitada ? "Tren superior (brazo derecho)" : "Tren superior", grupos: TREN_SUPERIOR },
   { titulo: "Tren inferior y lumbar", grupos: TREN_INFERIOR },
   { titulo: "Core (casa)", grupos: ["core"] },
 ];
@@ -34,6 +34,7 @@ export function CoverageBars({
   minimo,
   minimos,
   compacto = false,
+  manoLimitada = false,
 }: {
   total: Coverage;
   casa?: Coverage;
@@ -41,6 +42,7 @@ export function CoverageBars({
   /** Mínimo por grupo cuando no es igual para todos (prioridad de torso). */
   minimos?: Coverage;
   compacto?: boolean;
+  manoLimitada?: boolean;
 }) {
   const min = (g: MuscleGroup) => minimos?.[g] ?? minimo;
   const variable = GRUPOS.some((g) => min(g) !== minimo);
@@ -60,7 +62,7 @@ export function CoverageBars({
           <Check className="size-4 text-lime" /> Todos los grupos llegan a su mínimo{variable ? "" : ` de ${minimo} series`}.
         </p>
       )}
-      {BLOQUES.map((b) => (
+      {bloques(manoLimitada).map((b) => (
         <div key={b.titulo}>
           {!compacto && <h3 className="mb-2 text-xs text-muted-foreground">{b.titulo}</h3>}
           <ul className="space-y-1.5">

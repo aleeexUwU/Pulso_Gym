@@ -8,19 +8,14 @@
 //      no hay clave de Gemini o si Gemini falla (p. ej. límite diario agotado).
 // PROVEEDOR_IA=claude|gemini fuerza uno concreto. GEMINI_MODEL cambia el modelo de Gemini.
 //
-// Seguridad y coste: exige sesión y que el email esté en ALLOWED_EMAILS (lista
-// separada por comas). Sin esa variable la función se niega a responder.
+// Seguridad y coste: exige sesión y que el email esté en la tabla public.ia_autorizados
+// (solo se añade a mano desde Supabase).
 
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { zodOutputFormat } from "npm:@anthropic-ai/sdk@0.133.0/helpers/zod";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { CORS, respuesta, usuarioAutorizado } from "../_shared/autorizacion.ts";
 import { z } from "npm:zod@4.6.7";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
 const TIPOS_IMAGEN = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
@@ -154,27 +149,14 @@ async function conClaude(prompt: string, imagen?: { data: string; tipo: TipoImag
   }
 }
 
-function respuesta(cuerpo: unknown, status = 200) {
-  return new Response(JSON.stringify(cuerpo), { status, headers: { ...CORS, "Content-Type": "application/json" } });
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return respuesta({ error: "Método no permitido" }, 405);
 
-  // 1) Usuario autenticado y autorizado.
-  const permitidos = (Deno.env.get("ALLOWED_EMAILS") ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (permitidos.length === 0) return respuesta({ error: "Falta configurar ALLOWED_EMAILS en los secretos de la función." }, 403);
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-  });
-  const { data: usuario } = await supabase.auth.getUser();
-  const email = usuario.user?.email?.toLowerCase();
-  if (!email) return respuesta({ error: "Inicia sesión para usar el análisis con IA." }, 401);
-  if (!permitidos.includes(email)) return respuesta({ error: "Tu cuenta no tiene acceso al análisis con IA." }, 403);
+  // 1) Usuario autenticado y autorizado (tabla public.ia_autorizados).
+  const acceso = await usuarioAutorizado(req);
+  if (acceso instanceof Response) return acceso;
 
   // 2) Entrada: texto y/o imagen en base64.
   let cuerpo: { texto?: string; imagen?: string; tipoImagen?: string };

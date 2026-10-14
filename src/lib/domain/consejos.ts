@@ -277,9 +277,14 @@ export function consejoPeso(p: { repsMin: number; repsMax: number; rir: number }
 }
 
 /** Consejos para la pantalla de sesión. Si el ejercicio no tiene consejos propios, se sacan de su técnica. */
-export function consejosDe(e: Exercise, p: { repsMin: number; repsMax: number; rir: number }): SeccionConsejos[] {
+export function consejosDe(
+  e: Exercise,
+  p: { repsMin: number; repsMax: number; rir: number },
+  manoLimitada = true,
+): SeccionConsejos[] {
   const c = CONSEJOS[e.id];
-  const prepara = c?.prepara ?? e.pasos.slice(0, 1);
+  const sinManoIzq = (l: string) => manoLimitada || !/mano izquierda/i.test(l);
+  const prepara = (c?.prepara ?? e.pasos.slice(0, 1)).filter(sinManoIzq);
   const claves = c?.claves ?? e.pasos.slice(1);
   const secciones: SeccionConsejos[] = [
     { titulo: "Antes de empezar", lineas: prepara },

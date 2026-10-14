@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { useNota } from "@/lib/db/hooks";
+import { useNota, usePerfil } from "@/lib/db/hooks";
+import { tieneManoLimitada } from "@/lib/domain/limitations";
 import { guardar } from "@/lib/db/repo";
 import type { ExerciseNote } from "@/lib/db/types";
 import { consejosDe } from "@/lib/domain/consejos";
@@ -62,6 +63,9 @@ function EditorNota({ exerciseId, inicial }: { exerciseId: string; inicial: stri
 }
 
 export function TecnicaContenido({ ejercicio }: { ejercicio: Exercise }) {
+  const perfil = usePerfil();
+  // La nota de adaptación a una mano solo para quien tiene una mano limitada.
+  const verAdaptacion = !!ejercicio.adaptacion && !!perfil && tieneManoLimitada(perfil.limitaciones);
   const pref = ejercicio.alternativaPreferida ? getEjercicio(ejercicio.alternativaPreferida) : undefined;
   return (
     <div className="space-y-4">
@@ -81,7 +85,7 @@ export function TecnicaContenido({ ejercicio }: { ejercicio: Exercise }) {
           </p>
         </div>
       )}
-      {ejercicio.adaptacion && (
+      {verAdaptacion && (
         <div className="flex gap-2 rounded-2xl border border-violet/40 bg-violet/10 p-3 text-sm">
           <Hand className="mt-0.5 size-4 shrink-0 text-violet" />
           <p>
@@ -168,6 +172,7 @@ export function ConsejosSheet({
   prescripcion: { repsMin: number; repsMax: number; rir: number };
   onOpenChange: (abierto: boolean) => void;
 }) {
+  const perfil = usePerfil();
   const e = exerciseId ? getEjercicio(exerciseId) : undefined;
   return (
     <Sheet open={!!e} onOpenChange={onOpenChange}>
@@ -179,7 +184,7 @@ export function ConsejosSheet({
               <SheetDescription>{e.nombre}</SheetDescription>
             </SheetHeader>
             <div className="space-y-4">
-              {consejosDe(e, prescripcion).map((s) => {
+              {consejosDe(e, prescripcion, !!perfil && tieneManoLimitada(perfil.limitaciones)).map((s) => {
                 const Icono = ICONO_SECCION[s.titulo] ?? Lightbulb;
                 return (
                   <section key={s.titulo}>

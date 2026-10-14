@@ -1,7 +1,7 @@
 import { coberturaDeDias, sumarCobertura } from "./coverage";
 import { NOMBRE_DIA, ordenarDias } from "./dates";
 import { EJERCICIOS_GIMNASIO, ejercicio } from "./exercises";
-import { ejercicioPermitido, type FiltroEjercicios } from "./limitations";
+import { ejercicioPermitido, tieneManoLimitada, type FiltroEjercicios } from "./limitations";
 import { coberturaVacia, GRUPO_NOMBRE, GRUPOS_GIMNASIO, GRUPOS_GRANDES, TREN_INFERIOR, TREN_SUPERIOR } from "./muscles";
 import type {
   Coverage,
@@ -42,7 +42,7 @@ export interface GeneratorInput {
 export type Prioridad = "superior" | "equilibrado";
 
 /** Versión del generador: si un plan guardado es de una versión anterior, se regenera. */
-export const VERSION_PLAN = 4;
+export const VERSION_PLAN = 5;
 
 export const MAX_SERIES_EJERCICIO = 4;
 
@@ -88,18 +88,32 @@ function mancuernaDeAntebrazo(e: Exercise): boolean {
   return e.tipoCarga === "mancuerna" && (e.musculos.antebrazo ?? 0) >= 1;
 }
 
-/**
- * Preferencia por tipo de carga con "máquinas primero": 0 máquina guiada, 1 polea,
- * 2 resto (peso corporal, banda...), 3 mancuerna. Sin esa opción, todos valen 0.
- * Excepción: el antebrazo se prefiere con mancuerna (curl y extensión de muñeca).
- */
-export function nivelCarga(e: Exercise, filtro: Pick<FiltroEjercicios, "evitarMancuernas">): number {
-  if (!filtro.evitarMancuernas) return 0;
+/** Tipo de carga con "máquinas primero": 0 máquina guiada, 1 polea, 2 resto, 3 mancuerna. */
+function tierCarga(e: Exercise, evitarMancuernas?: boolean): number {
+  if (!evitarMancuernas) return 0;
   if (mancuernaDeAntebrazo(e)) return 0;
   if (e.tipoCarga === "maquina") return 0;
   if (e.tipoCarga === "polea") return 1;
   if (e.tipoCarga === "mancuerna") return 3;
   return 2;
+}
+
+/** Ejercicio de tren superior adaptado a una mano (sin versión clásica a dos manos). */
+function adaptadoUnaMano(e: Exercise): boolean {
+  return !e.bilateral && TREN_SUPERIOR.some((g) => g !== "antebrazo" && (e.musculos[g] ?? 0) >= 1);
+}
+
+/**
+ * Preferencia (menor = mejor):
+ * - con "máquinas primero": máquina guiada → polea → resto → mancuerna (el antebrazo,
+ *   con mancuerna);
+ * - sin ninguna mano limitada, los clásicos a dos manos van antes que los adaptados a
+ *   una mano dentro de cada tipo de carga.
+ */
+export function nivelCarga(e: Exercise, filtro: Pick<FiltroEjercicios, "evitarMancuernas" | "limitaciones">): number {
+  const tier = tierCarga(e, filtro.evitarMancuernas);
+  const penal = !tieneManoLimitada(filtro.limitaciones ?? []) && adaptadoUnaMano(e) ? 1 : 0;
+  return tier * 2 + penal;
 }
 
 /**
@@ -111,7 +125,7 @@ export function nivelCarga(e: Exercise, filtro: Pick<FiltroEjercicios, "evitarMa
 export function candidatos(grupo: MuscleGroup, filtro: FiltroEjercicios): { lista: Exercise[]; ultimoRecurso: boolean } {
   const validos = EJERCICIOS_GIMNASIO.filter((e) => (e.musculos[grupo] ?? 0) >= 1 && ejercicioPermitido(e, filtro));
   const orden = (a: Exercise, b: Exercise) => a.prioridad - b.prioridad || Number(b.compuesto) - Number(a.compuesto);
-  const sinSmith = validos.filter((e) => !e.smith).sort(orden);
+  const sinSmith = validos.filter((e) => !e.smith).sort((a, b) => nivelCarga(a, filtro) - nivelCarga(b, filtro) || orden(a, b));
   if (filtro.evitarMancuernas) {
     const sinMancuerna = sinSmith
       .filter((e) => e.tipoCarga !== "mancuerna" || mancuernaDeAntebrazo(e))
@@ -136,6 +150,12 @@ export function gruposDe(enfoque: DayFocus): MuscleGroup[] {
   if (enfoque === "torso") return TREN_SUPERIOR;
   if (enfoque === "pierna") return TREN_INFERIOR;
   return GRUPOS_GIMNASIO;
+}
+
+/** Nombre del tipo de día; "brazo derecho" solo si hay una mano limitada. */
+function nombreEnfoque(enfoque: DayFocus, limitaciones: readonly LimitationId[]): string {
+  if (enfoque === "torso" && !tieneManoLimitada(limitaciones)) return "Torso";
+  return NOMBRE_ENFOQUE[enfoque];
 }
 
 const NOMBRE_ENFOQUE: Record<DayFocus, string> = {
@@ -338,7 +358,7 @@ function aPlanDay(s: Sesion, i: number, input: GeneratorInput): PlanDay {
   return {
     id: `dia-${s.diaSemana}`,
     diaSemana: s.diaSemana,
-    nombre: `Día ${String.fromCharCode(65 + i)} · ${NOMBRE_ENFOQUE[s.enfoque]}`,
+    nombre: `Día ${String.fromCharCode(65 + i)} · ${nombreEnfoque(s.enfoque, input.limitaciones)}`,
     enfoque: s.enfoque,
     ejercicios,
     duracionEstimadaMin: duracionEstimada(ejercicios),

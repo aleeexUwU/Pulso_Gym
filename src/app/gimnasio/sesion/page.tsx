@@ -56,6 +56,7 @@ const PASO_STEPPER: Record<LoadType, number> = {
   kettlebell: 2,
   peso_corporal: 1,
   banda: 1,
+  barra: 2.5,
 };
 
 function pendientes(ej: WorkoutExercise) {

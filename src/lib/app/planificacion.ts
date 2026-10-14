@@ -107,6 +107,26 @@ export async function quitarDolor(exerciseId: string): Promise<void> {
   await escribirKv("perfil", { ...perfil, excluidos: perfil.excluidos.filter((x) => x !== exerciseId) });
 }
 
+/**
+ * Los ajustes "máquinas primero" y "prioridad tren superior" eran el valor por defecto
+ * cuando la app solo la usaba una persona con la mano izquierda limitada. Ahora el
+ * defecto es neutro; a quien tenía esa limitación y nunca los cambió se le guardan
+ * explícitamente para que su rutina no cambie.
+ */
+export async function conservarAjustesAntiguos(): Promise<void> {
+  const perfil = await leerKv("perfil");
+  const guardados = (await leerKv("ajustes")) as Partial<Settings> | undefined;
+  if (!perfil || !guardados || !perfil.limitaciones.includes("mano_izquierda")) return;
+  if (guardados.evitarMancuernas !== undefined && guardados.prioridad !== undefined) return;
+  await escribirKv("ajustes", {
+    ...ajustesPorDefecto(),
+    ...guardados,
+    evitarMancuernas: guardados.evitarMancuernas ?? true,
+    prioridad: guardados.prioridad ?? "superior",
+  });
+  if (await leerKv("plan")) await regenerarPlan();
+}
+
 export async function guardarAjustes(cambios: Partial<Settings>): Promise<Settings> {
   const actual = { ...ajustesPorDefecto(), ...((await leerKv("ajustes")) ?? {}) };
   const nuevo = { ...actual, ...cambios };

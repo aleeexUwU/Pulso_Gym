@@ -23,7 +23,7 @@ const SPLASH: [number, number, number, number][] = [
 
 export const metadata: Metadata = {
   title: { default: "vl3x-GYM", template: "%s · vl3x-GYM" },
-  description: "Entrenamiento personal adaptado: gimnasio con el brazo derecho, core diario en casa y módulo de brazo izquierdo.",
+  description: "Entrenamiento personal: rutina de gimnasio a tu medida (adaptable a lesiones), core diario en casa y dieta.",
   applicationName: "vl3x-GYM",
   manifest: "/manifest.webmanifest",
   icons: {

@@ -96,6 +96,8 @@ export const EQUIPO_NOMBRE: Record<Equipment, string> = {
   banda_elastica: "Bandas elásticas",
   cinturon_lastre: "Cinturón de lastre",
   smith: "Máquina Smith (último recurso)",
+  barra: "Barra libre y discos",
+  barra_dominadas: "Barra de dominadas",
   esterilla: "Esterilla",
 };
 

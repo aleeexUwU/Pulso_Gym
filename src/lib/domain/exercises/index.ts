@@ -1,8 +1,12 @@
 import type { Exercise } from "../types";
 import { EJERCICIOS_ABDOMINALES } from "./abs";
-import { EJERCICIOS_GIMNASIO } from "./gym";
+import { EJERCICIOS_BILATERALES } from "./bilateral";
+import { EJERCICIOS_GIMNASIO as ADAPTADOS } from "./gym";
 
-export { EJERCICIOS_ABDOMINALES, EJERCICIOS_GIMNASIO };
+/** Gimnasio: ejercicios adaptados a una mano + clásicos a dos manos. */
+export const EJERCICIOS_GIMNASIO: Exercise[] = [...ADAPTADOS, ...EJERCICIOS_BILATERALES];
+
+export { EJERCICIOS_ABDOMINALES };
 
 export const EJERCICIOS: Exercise[] = [...EJERCICIOS_GIMNASIO, ...EJERCICIOS_ABDOMINALES];
 

@@ -3,7 +3,7 @@ import type { Exercise } from "../types";
 type Base = Pick<Exercise, "id" | "nombre" | "musculos" | "equipo" | "tipoCarga" | "pasos" | "errores"> &
   Partial<Exercise>;
 
-/** Valores por defecto de un ejercicio de gimnasio: tren superior siempre con la derecha. */
+/** Valores por defecto de un ejercicio adaptado: tren superior con la derecha y la izquierda libre. */
 function ej(e: Base): Exercise {
   return {
     modulo: "gimnasio",
@@ -26,8 +26,10 @@ const MANO_IZQ_LIBRE =
   "La mano izquierda no agarra ni empuja: déjala relajada sobre el muslo, el abdomen o el asiento, sin cargar la muñeca.";
 
 /**
- * Catálogo del módulo gimnasio. Reglas que comprueban los tests:
- * - ningún ejercicio necesita la mano izquierda (manoIzquierda === "ninguna");
+ * Ejercicios adaptados para hacerlos con una sola mano (la derecha), sin cargar la
+ * izquierda. Los usa cualquiera, pero son los únicos de tren superior para quien tiene
+ * una mano limitada. Reglas que comprueban los tests:
+ * - ninguno necesita la mano izquierda (manoIzquierda === "ninguna");
  * - nunca hay barra libre;
  * - la Smith solo aparece como último recurso (smith: true + alternativaPreferida).
  */

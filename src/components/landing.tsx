@@ -10,8 +10,8 @@ import { supabaseConfigurado } from "@/lib/sync/supabase";
 const QUE_HACE = [
   {
     icono: Dumbbell,
-    titulo: "Gimnasio a una mano",
-    texto: "Una rutina que trabaja todos los músculos con el brazo derecho, sin cargar nunca la mano izquierda.",
+    titulo: "Una rutina hecha para ti",
+    texto: "Trabaja todos los músculos cada semana con tu material, tus días y tu nivel. Si tienes una lesión, la adapta.",
   },
   {
     icono: Activity,
@@ -46,7 +46,7 @@ export function Landing({ onEmpezar }: { onEmpezar: () => void }) {
 
       <h1 className="relative mt-2 font-logo text-[clamp(2.4rem,11vw,3.6rem)] leading-none text-primary">VL3X-GYM</h1>
       <p className="relative mt-3 max-w-[34ch] text-lg leading-snug text-foreground/90">
-        Tu entreno personal, pensado para hacerlo todo con el brazo derecho.
+        Tu entreno personal: gimnasio, core y dieta en una sola app.
       </p>
 
       <ul className="relative mt-7 max-w-md space-y-5">

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { coberturaAbdominalesSemana } from "../abs-routine";
 import { EJERCICIOS, EJERCICIOS_GIMNASIO, ejercicio } from "../exercises";
 import { candidatos, generarPlan, repararPlan, type GeneratorInput } from "../generator";
-import { requiereManoIzquierda } from "../limitations";
+import { detectarLimitaciones, ejercicioPermitido, requiereManoIzquierda } from "../limitations";
 import { EQUIPO_GIMNASIO_COMPLETO, GRUPOS, GRUPOS_GIMNASIO } from "../muscles";
 import { mejorAlternativaEnPlan, sustituirEnPlan } from "../substitution";
 import type { Equipment, MuscleGroup, Weekday } from "../types";
@@ -35,15 +35,20 @@ const CONFIGS: [string, Weekday[]][] = [
 ];
 
 describe("catálogo del módulo gimnasio", () => {
-  it("ningún ejercicio del gimnasio requiere la mano izquierda", () => {
-    for (const e of EJERCICIOS_GIMNASIO) {
+  it("los ejercicios adaptados no usan la mano izquierda ni barra libre", () => {
+    for (const e of EJERCICIOS_GIMNASIO.filter((x) => !x.bilateral)) {
       expect(requiereManoIzquierda(e), e.id).toBe(false);
       expect(e.manoIzquierda, e.id).toBe("ninguna");
+      expect(e.barraLibre, e.id).toBe(false);
     }
   });
 
-  it("no hay barra libre en todo el catálogo", () => {
-    for (const e of EJERCICIOS) expect(e.barraLibre, e.id).toBe(false);
+  it("con la mano izquierda limitada nunca sale un ejercicio que la necesite ni barra libre", () => {
+    const filtro = { equipo: EQUIPO_GIMNASIO_COMPLETO, limitaciones: ["mano_izquierda" as const], excluidos: [] };
+    for (const e of EJERCICIOS_GIMNASIO.filter((x) => ejercicioPermitido(x, filtro))) {
+      expect(requiereManoIzquierda(e), e.id).toBe(false);
+      expect(e.barraLibre, e.id).toBe(false);
+    }
   });
 
   it("todo ejercicio Smith está marcado como último recurso con alternativa preferida válida", () => {
@@ -246,5 +251,38 @@ describe("consejos", () => {
     for (const e of EJERCICIOS_GIMNASIO) {
       expect(consejosDe(e, { repsMin: 8, repsMax: 12, rir: 2 }).length, e.id).toBeGreaterThanOrEqual(3);
     }
+  });
+});
+
+describe("persona sin limitaciones", () => {
+  const base = entrada([1, 3, 5], { limitaciones: [] });
+  const plan = generarPlan({ ...base, coberturaCasa: coberturaAbdominalesSemana(LUNES, LUNES, { equipo: EQUIPO_GIMNASIO_COMPLETO, limitaciones: [], excluidos: [] }) });
+  const ids = plan.dias.flatMap((d) => d.ejercicios.map((pe) => pe.exerciseId));
+
+  it("usa los clásicos a dos manos para el tren superior y cubre todo", () => {
+    expect(plan.gruposSinCubrir).toEqual([]);
+    expect(ids.some((id) => ejercicio(id).bilateral)).toBe(true);
+    expect(ids).toContain("press_banca_barra");
+  });
+
+  it("no menciona el brazo derecho en los nombres de los días", () => {
+    for (const d of plan.dias) expect(d.nombre).not.toMatch(/derech/i);
+  });
+});
+
+describe("detección de limitaciones por texto", () => {
+  it("reconoce rodilla, lumbar y una mano limitada", () => {
+    expect(detectarLimitaciones("Me operaron del menisco de la rodilla")).toEqual(["rodilla"]);
+    expect(detectarLimitaciones("Tengo una hernia lumbar")).toEqual(["lumbar"]);
+    expect(detectarLimitaciones("Nací con la mano izquierda zamba")).toContain("mano_izquierda");
+    expect(detectarLimitaciones("")).toEqual([]);
+  });
+});
+
+describe("sin limitaciones, la espalda va con ejercicios clásicos", () => {
+  it("no usa jalón ni remo adaptados a una mano si hay clásicos", () => {
+    const plan = generarPlan(entrada([1, 3, 5], { limitaciones: [] }));
+    const ids = plan.dias.flatMap((d) => d.ejercicios.map((pe) => pe.exerciseId));
+    expect(ids.filter((id) => id.startsWith("jalon_polea_una_mano") || id === "remo_mancuerna_pecho_apoyado")).toEqual([]);
   });
 });

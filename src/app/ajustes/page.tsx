@@ -6,12 +6,10 @@ import { toast } from "sonner";
 import { CuentaCard } from "@/components/cuenta-card";
 import { ReminderCard } from "@/components/reminder-card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Aviso, Cargando, Chips, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
 import { exportarJSON, importarJSON } from "@/lib/app/exportar";
 import { guardarAjustes, quitarDolor, regenerarPlan } from "@/lib/app/planificacion";
@@ -20,7 +18,8 @@ import { useAjustes, usePerfil, usePlan } from "@/lib/db/hooks";
 import { escribirKv } from "@/lib/db/repo";
 import { NOMBRE_DIA_CORTO, SEMANA_LUNES } from "@/lib/domain/dates";
 import { getEjercicio } from "@/lib/domain/exercises";
-import { LIMITACIONES } from "@/lib/domain/limitations";
+import { tieneManoLimitada } from "@/lib/domain/limitations";
+import { LimitacionesEditor } from "@/components/limitaciones-editor";
 import { objetivosDiarios, type AjustesDieta } from "@/lib/domain/nutrition/objetivos";
 import { EQUIPO_NOMBRE } from "@/lib/domain/muscles";
 import type { Equipment, Experience, Goal, Profile, Settings, Sex, Weekday } from "@/lib/domain/types";
@@ -118,30 +117,16 @@ export default function Ajustes() {
       </Glass>
 
       <Glass className="space-y-4">
-        <SectionTitle>Limitaciones</SectionTitle>
-        {LIMITACIONES.map((l) => (
-          <label key={l.id} className="flex items-start gap-3 rounded-xl bg-secondary/50 p-3">
-            <Checkbox
-              className="mt-0.5 size-5"
-              checked={perfil.limitaciones.includes(l.id)}
-              onCheckedChange={(v) =>
-                perfilYRegenerar({ limitaciones: v ? [...perfil.limitaciones, l.id] : perfil.limitaciones.filter((x) => x !== l.id) })
-              }
-            />
-            <span>
-              <span className="block text-sm font-medium">{l.nombre}</span>
-              <span className="block text-xs text-muted-foreground">{l.descripcion}</span>
-            </span>
-          </label>
-        ))}
-        <Fila titulo="Notas">
-          <Textarea
-            defaultValue={perfil.notasLimitaciones}
-            onBlur={(e) => escribirKv("perfil", { ...perfil, notasLimitaciones: e.target.value })}
-            className="min-h-20 rounded-xl"
-          />
-        </Fila>
-        <Fila titulo="Ejercicios marcados con molestia" ayuda="No vuelven a aparecer en la rutina. Quítalos de aquí si ya no te molestan.">
+        <SectionTitle>Lesiones y limitaciones</SectionTitle>
+        <LimitacionesEditor
+          conIA
+          limitaciones={perfil.limitaciones}
+          notas={perfil.notasLimitaciones}
+          onLimitaciones={(ids) => perfilYRegenerar({ limitaciones: ids })}
+          onNotas={(t) => escribirKv("perfil", { ...perfil, notasLimitaciones: t })}
+          onExcluir={(ids) => perfilYRegenerar({ excluidos: [...new Set([...perfil.excluidos, ...ids])] })}
+        />
+        <Fila titulo="Ejercicios quitados" ayuda="Por molestia o por tu limitación: no vuelven a aparecer en la rutina. Quítalos de aquí si ya puedes hacerlos.">
           {perfil.excluidos.length === 0 ? (
             <p className="text-sm text-muted-foreground">Ninguno.</p>
           ) : (
@@ -221,6 +206,7 @@ export default function Ajustes() {
 
       <Glass className="space-y-4">
         <SectionTitle>Módulos</SectionTitle>
+        {(tieneManoLimitada(perfil.limitaciones) || ajustes.moduloBrazo) && (
         <label className="flex items-center justify-between gap-3">
           <span className="flex items-start gap-2 text-sm">
             <Hand className="mt-0.5 size-4 text-violet" />
@@ -238,6 +224,7 @@ export default function Ajustes() {
             aria-label="Activar módulo brazo izquierdo"
           />
         </label>
+        )}
         {ajustes.moduloBrazo && (
           <Button asChild variant="outline" className="h-11 w-full rounded-xl">
             <Link href="/brazo/">Ir al módulo brazo izquierdo</Link>

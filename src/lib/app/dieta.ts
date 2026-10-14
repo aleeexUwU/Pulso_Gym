@@ -27,12 +27,20 @@ export function totales(comidas: Comida[]): Nutrientes {
   return comidas.length ? sumarNutrientes(...comidas.flatMap((c) => c.items)) : { ...NUTRIENTES_CERO };
 }
 
-/** ¿Se puede usar la IA? Requiere Supabase configurado y sesión iniciada. */
+/**
+ * ¿Se puede usar la IA? Requiere sesión iniciada y que la cuenta esté autorizada en la
+ * tabla public.ia_autorizados (la RLS solo deja ver la fila propia).
+ */
 export async function iaDisponible(): Promise<{ ok: boolean; motivo?: string }> {
   if (!supabaseConfigurado) return { ok: false, motivo: "La IA necesita Supabase configurado." };
   if (typeof navigator !== "undefined" && !navigator.onLine) return { ok: false, motivo: "Sin conexión." };
-  const { data } = await supabase()!.auth.getSession();
-  if (!data.session) return { ok: false, motivo: "Inicia sesión en Ajustes → Cuenta para usar la IA." };
+  const sb = supabase()!;
+  const { data } = await sb.auth.getSession();
+  const email = data.session?.user.email?.toLowerCase();
+  if (!email) return { ok: false, motivo: "Inicia sesión en Ajustes → Cuenta para usar la IA." };
+  const { data: fila, error } = await sb.from("ia_autorizados").select("email").eq("email", email).maybeSingle();
+  if (error) return { ok: false, motivo: "No se pudo comprobar el acceso a la IA." };
+  if (!fila) return { ok: false, motivo: "La IA no está activada para tu cuenta." };
   return { ok: true };
 }
 

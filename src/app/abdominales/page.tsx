@@ -12,6 +12,7 @@ import { clavesHechas, fechasDe } from "@/lib/app/resumen";
 import { useAbsSessions, useAjustes, useEvaluacionBrazo, usePerfil } from "@/lib/db/hooks";
 import { CATEGORIA_NOMBRE, rutinaAbdominales } from "@/lib/domain/abs-routine";
 import { hoyISO } from "@/lib/domain/dates";
+import { tieneManoLimitada } from "@/lib/domain/limitations";
 import { ejercicio } from "@/lib/domain/exercises";
 import { mejorRacha, racha } from "@/lib/domain/weekly-plan";
 
@@ -81,8 +82,8 @@ export default function Abdominales() {
           <Link href="/abdominales/sesion/">{hechoHoy ? <><RotateCcw /> Repetir</> : <><Play /> Empezar</>}</Link>
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">
-          Cada semana suben las repeticiones o los segundos; al llegar al tope pasas a una variante más difícil. Sin apoyar peso en
-          la mano izquierda.
+          Cada semana suben las repeticiones o los segundos; al llegar al tope pasas a una variante más difícil.
+          {tieneManoLimitada(perfil.limitaciones) && " Sin apoyar peso en la mano izquierda."}
         </p>
       </Glass>
 

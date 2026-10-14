@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "vl3x-GYM · Entreno personal",
     short_name: "vl3x-GYM",
-    description: "Gimnasio adaptado con el brazo derecho, core diario en casa y módulo de brazo izquierdo.",
+    description: "Rutina de gimnasio a tu medida, core diario en casa y dieta.",
     lang: "es",
     start_url: "/",
     scope: "/",

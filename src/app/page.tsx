@@ -42,6 +42,7 @@ import { useAbsSessions, useAjustes, useArmSessions, useEvaluacionBrazo, usePerf
 import { diaSemana, formatoFecha, hoyISO, inicioSemana, NOMBRE_DIA, sumarDias } from "@/lib/domain/dates";
 import { ejercicio } from "@/lib/domain/exercises";
 import { VERSION_PLAN } from "@/lib/domain/generator";
+import { tieneManoLimitada } from "@/lib/domain/limitations";
 import { evaluarDescarga } from "@/lib/domain/progression";
 import type { PlanDay } from "@/lib/domain/types";
 import { planSemanal } from "@/lib/domain/weekly-plan";
@@ -348,7 +349,7 @@ export default function Gimnasio() {
 
         <Glass>
           <SectionTitle>Cobertura muscular semanal</SectionTitle>
-          <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} minimos={plan.minimos} />
+          <CoverageBars total={plan.cobertura} casa={casa} minimo={plan.seriesMinimas} minimos={plan.minimos} manoLimitada={tieneManoLimitada(perfil.limitaciones)} />
         </Glass>
 
       </div>

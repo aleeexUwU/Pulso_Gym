@@ -48,6 +48,8 @@ export function incrementoPara(tipo: LoadType, inc: Incrementos): number {
       return inc.polea;
     case "kettlebell":
       return inc.kettlebell;
+    case "barra":
+      return inc.smith;
     case "smith":
       return inc.smith;
     default:

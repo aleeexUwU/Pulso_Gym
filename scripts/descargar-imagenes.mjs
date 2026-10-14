@@ -7,7 +7,7 @@ import sharp from "sharp";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises";
-const fuentes = ["src/lib/domain/exercises/gym.ts", "src/lib/domain/exercises/abs.ts"];
+const fuentes = ["src/lib/domain/exercises/gym.ts", "src/lib/domain/exercises/bilateral.ts", "src/lib/domain/exercises/abs.ts"];
 
 const ids = new Set();
 for (const f of fuentes) {

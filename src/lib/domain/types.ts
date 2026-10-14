@@ -46,10 +46,12 @@ export type Equipment =
   | "banda_elastica"
   | "cinturon_lastre"
   | "smith"
+  | "barra"
+  | "barra_dominadas"
   | "esterilla";
 
 /** Cómo se carga el ejercicio: decide el incremento de peso al progresar. */
-export type LoadType = "mancuerna" | "maquina" | "polea" | "peso_corporal" | "smith" | "banda" | "kettlebell";
+export type LoadType = "mancuerna" | "maquina" | "polea" | "peso_corporal" | "smith" | "banda" | "kettlebell" | "barra";
 
 /**
  * Uso de la mano/brazo izquierdo:
@@ -80,8 +82,10 @@ export interface Exercise {
   tipoCarga: LoadType;
   compuesto: boolean;
   manoIzquierda: LeftHandUse;
-  /** Nunca true en el catálogo: la barra libre exige las dos manos. Se mantiene para los tests. */
+  /** Barra libre: exige las dos manos (nunca sale con una mano limitada). */
   barraLibre: boolean;
+  /** Ejercicio clásico a dos manos: preferido cuando no hay limitación en las manos. */
+  bilateral?: boolean;
   /** Máquina Smith: solo como último recurso. */
   smith: boolean;
   /** Para ejercicios Smith: el ejercicio preferido si tuvieras el material. */

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Logo } from "@/components/kakugan";
 import { Landing } from "@/components/landing";
 import { Aviso, Chips, Glass } from "@/components/ui-kit";
@@ -19,11 +19,11 @@ import { escribirKv } from "@/lib/db/repo";
 import { NOMBRE_DIA_CORTO, SEMANA_LUNES } from "@/lib/domain/dates";
 import { ajustesPorDefecto, perfilPorDefecto } from "@/lib/domain/defaults";
 import { generarPlan } from "@/lib/domain/generator";
-import { LIMITACIONES } from "@/lib/domain/limitations";
+import { LimitacionesEditor } from "@/components/limitaciones-editor";
 import { EQUIPO_GIMNASIO_COMPLETO, EQUIPO_NOMBRE } from "@/lib/domain/muscles";
-import type { Equipment, Experience, Goal, LimitationId, Profile, Sex, Weekday } from "@/lib/domain/types";
+import type { Equipment, Experience, Goal, Profile, Sex, Weekday } from "@/lib/domain/types";
 
-const PASOS = ["Antes de empezar", "Sobre ti", "Experiencia y objetivo", "Días y duración", "Material", "Limitaciones", "Resumen"];
+const PASOS = ["Antes de empezar", "Sobre ti", "Experiencia y objetivo", "Días y duración", "Material", "Lesiones y limitaciones", "Resumen"];
 
 const PRESETS: { nombre: string; equipo: Equipment[] }[] = [
   { nombre: "Gimnasio completo", equipo: EQUIPO_GIMNASIO_COMPLETO },
@@ -43,7 +43,7 @@ export default function Bienvenida() {
   const [guardando, setGuardando] = useState(false);
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((x) => ({ ...x, [k]: v }));
 
-  const ajustes = useMemo(() => ajustesPorDefecto(), []);
+  const [ajustes, setAjustes] = useState(() => ajustesPorDefecto());
   const estimacion = useMemo(() => {
     if (p.dias.length === 0) return null;
     const plan = generarPlan(entradaGenerador(p, ajustes, null));
@@ -105,9 +105,9 @@ export default function Bienvenida() {
             <>
               <Glass>
                 <p className="leading-relaxed">
-                  Vas a crear una rutina de <strong>cuerpo completo</strong> en la que todo el tren superior se hace con el{" "}
-                  <strong>brazo derecho</strong> y nada carga la mano o la muñeca izquierda. Además tendrás un{" "}
-                  <strong>core diario en casa</strong> y un módulo para el brazo izquierdo que podrás activar cuando quieras.
+                  Vas a crear una rutina de gimnasio que trabaja <strong>todos los músculos</strong> cada semana, con el
+                  material que tengas, más un <strong>core corto en casa</strong>. Si tienes alguna lesión o limitación
+                  física, en un paso te preguntaremos y adaptaremos los ejercicios.
                 </p>
               </Glass>
               <Aviso tipo="warn">
@@ -115,7 +115,7 @@ export default function Bienvenida() {
                   <HeartPulse className="mt-0.5 size-5 shrink-0 text-warn" />
                   <p>
                     Esta app es orientativa y no sustituye a un profesional. Antes de empezar, sobre todo tras mucho tiempo
-                    sin entrenar y con una condición como la mano zamba radial, consulta con tu <strong>médico</strong> o{" "}
+                    sin entrenar o si tienes alguna lesión, consulta con tu <strong>médico</strong> o{" "}
                     <strong>fisioterapeuta</strong>. Para cualquier dolor agudo, para y consulta.
                   </p>
                 </div>
@@ -209,6 +209,27 @@ export default function Bienvenida() {
                   Cambia los rangos de repeticiones, descansos y las repeticiones en reserva (RIR).
                 </p>
               </div>
+              <div>
+                <Label>Prioridad</Label>
+                <Chips<"equilibrado" | "superior">
+                  className="mt-1.5"
+                  valor={ajustes.prioridad}
+                  onChange={(v) => setAjustes((x) => ({ ...x, prioridad: v as "equilibrado" | "superior" }))}
+                  opciones={[
+                    { valor: "equilibrado", etiqueta: "Todo por igual" },
+                    { valor: "superior", etiqueta: "Más tren superior" },
+                  ]}
+                />
+              </div>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>
+                  Máquinas primero
+                  <span className="block text-xs text-muted-foreground">
+                    Recomendado si empiezas: las máquinas guían el movimiento y es más fácil notar el músculo.
+                  </span>
+                </span>
+                <Switch checked={ajustes.evitarMancuernas} onCheckedChange={(v) => setAjustes((x) => ({ ...x, evitarMancuernas: v }))} />
+              </label>
             </Glass>
           )}
 
@@ -273,40 +294,13 @@ export default function Bienvenida() {
           )}
 
           {paso === 5 && (
-            <Glass className="space-y-3">
-              {LIMITACIONES.map((l) => {
-                const activa = p.limitaciones.includes(l.id);
-                return (
-                  <label key={l.id} className="flex min-h-12 items-start gap-3 rounded-2xl bg-secondary/50 p-3">
-                    <Checkbox
-                      checked={activa}
-                      className="mt-0.5 size-5"
-                      onCheckedChange={(v) =>
-                        set(
-                          "limitaciones",
-                          v ? [...p.limitaciones, l.id] : p.limitaciones.filter((x: LimitationId) => x !== l.id),
-                        )
-                      }
-                    />
-                    <span>
-                      <span className="block text-sm font-medium">{l.nombre}</span>
-                      <span className="block text-xs text-muted-foreground">{l.descripcion}</span>
-                    </span>
-                  </label>
-                );
-              })}
-              <div>
-                <Label htmlFor="notas">Notas sobre tus limitaciones</Label>
-                <Textarea
-                  id="notas"
-                  value={p.notasLimitaciones}
-                  onChange={(e) => set("notasLimitaciones", e.target.value)}
-                  className="mt-1.5 min-h-24 rounded-2xl"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Aunque desmarques la mano izquierda, el módulo gimnasio sigue trabajando el tren superior solo con el brazo derecho.
-              </p>
+            <Glass>
+              <LimitacionesEditor
+                limitaciones={p.limitaciones}
+                notas={p.notasLimitaciones}
+                onLimitaciones={(ids) => set("limitaciones", ids)}
+                onNotas={(t) => set("notasLimitaciones", t)}
+              />
             </Glass>
           )}
 
