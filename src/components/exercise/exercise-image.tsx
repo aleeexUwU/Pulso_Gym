@@ -3,12 +3,80 @@
 import { Pause, Play } from "lucide-react";
 import { useState } from "react";
 import { imagenesEjercicio } from "@/lib/domain/exercises";
+import { animacionDe } from "@/lib/domain/exercises/animaciones";
 import type { Exercise } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 import { Ilustracion } from "./illustration";
+import { MapaMuscular } from "./mapa-muscular";
 
 /** Fases de una repetición, en el mismo orden y reparto que la animación `rep-*` de globals.css. */
 const FASES = ["Inicio", "Contrae", "Aprieta", "Vuelve despacio"] as const;
+
+interface Props {
+  ejercicio: Exercise;
+  className?: string;
+  /** false: miniatura para listas. */
+  animar?: boolean;
+  /** Vista grande: animación + mapa de músculos (o fotos con fases y ritmo). */
+  detalle?: boolean;
+}
+
+/**
+ * Imagen de un ejercicio. Si hay animación de ExerciseDB (muñeco 3D con los músculos
+ * en rojo) y se puede cargar, se usa; en detalle, junto al mapa del cuerpo con los
+ * músculos principales latiendo. Sin conexión o sin animación: las fotos de siempre.
+ * Con "reducir movimiento" se muestran las fotos quietas en vez del GIF.
+ */
+export function ExerciseImage(props: Props) {
+  const { ejercicio, className, animar = true, detalle = false } = props;
+  const gif = animacionDe(ejercicio);
+  const [fallo, setFallo] = useState(false);
+
+  if (!gif || fallo) {
+    if (!detalle) return <FotosEjercicio {...props} />;
+    return (
+      <div className={cn("grid grid-cols-[minmax(0,1fr)_8.5rem] gap-2", className)}>
+        <FotosEjercicio ejercicio={ejercicio} detalle className="aspect-[4/3] w-full" />
+        <MapaMuscular ejercicio={ejercicio} className="h-full" />
+      </div>
+    );
+  }
+
+  const animacion = (
+    // eslint-disable-next-line @next/next/no-img-element -- GIF animado servido por ExerciseDB
+    <img
+      src={gif}
+      alt={`Animación de ${ejercicio.nombre} con los músculos que trabaja en rojo`}
+      className="anim-ej-img size-full object-contain"
+      loading="lazy"
+      decoding="async"
+      onError={() => setFallo(true)}
+    />
+  );
+
+  if (!detalle) {
+    return <div className={cn("anim-ej overflow-hidden rounded-xl", !animar && "rounded-xl", className)}>{animacion}</div>;
+  }
+
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] gap-2">
+        <div className="anim-ej solo-movimiento aspect-square overflow-hidden rounded-2xl">{animacion}</div>
+        <FotosEjercicio ejercicio={ejercicio} detalle className="solo-reducido aspect-square w-full" />
+        <MapaMuscular ejercicio={ejercicio} className="h-full" />
+      </div>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="size-2 rounded-full bg-[rgb(232,52,74)]" /> trabaja (principal)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="size-2 rounded-full bg-[rgb(150,70,82)]" /> ayuda
+        </span>
+        <span className="ml-auto">Animación: ExerciseDB</span>
+      </p>
+    </div>
+  );
+}
 
 /**
  * Animación de la repetición a partir de las fotos de posición inicial y final
@@ -20,7 +88,7 @@ const FASES = ["Inicio", "Contrae", "Aprieta", "Vuelve despacio"] as const;
  * - `detalle`: muestra la fase, la barra de ritmo y deja pausar con un toque.
  * - Con "reducir movimiento": las dos posiciones lado a lado, sin animación.
  */
-export function ExerciseImage({
+function FotosEjercicio({
   ejercicio,
   className,
   animar = true,

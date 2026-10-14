@@ -2,7 +2,6 @@
 
 import { Activity, Apple, Dumbbell, WifiOff } from "lucide-react";
 import { useState } from "react";
-import { Ciempies } from "@/components/ciempies";
 import { CuentaCard } from "@/components/cuenta-card";
 import { Kakugan } from "@/components/kakugan";
 import { Button } from "@/components/ui/button";
@@ -36,13 +35,6 @@ export function Landing({ onEmpezar }: { onEmpezar: () => void }) {
   const [entrar, setEntrar] = useState(false);
   return (
     <div className="relative flex min-h-[calc(100dvh-2rem)] flex-col overflow-x-clip">
-      {/* Ciempiés en blanco y negro bajando por el lateral, detrás del texto. */}
-      <Ciempies
-        recorrido="portada"
-        segmentos={30}
-        grosor={20}
-        className="pointer-events-none absolute -right-24 top-40 h-[34rem] w-[22rem] opacity-35 lg:-right-10 lg:opacity-50"
-      />
       <div className="relative grid place-items-center pb-2 pt-6">
         {/* Halo carmesí detrás del ojo */}
         <div

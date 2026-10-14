@@ -189,7 +189,7 @@ export default function SesionAbdominales() {
             item && (
               <>
                 <button type="button" onClick={() => setTecnica(item.exerciseId)} aria-label="Ver técnica">
-                  <ExerciseImage ejercicio={ejercicio(item.exerciseId)} detalle className="aspect-[3/2] w-full" />
+                  <ExerciseImage ejercicio={ejercicio(item.exerciseId)} detalle className="w-full" />
                 </button>
                 <div className="text-center">
                   <p className="text-xs text-primary">{CATEGORIA_NOMBRE[item.categoria]}</p>

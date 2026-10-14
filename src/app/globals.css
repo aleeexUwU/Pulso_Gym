@@ -580,3 +580,38 @@
 :root:not(.dark) .fondo-higanbana {
   opacity: 0.22;
 }
+
+/* ── Animaciones de ExerciseDB y mapa muscular ── */
+.anim-ej {
+  background: oklch(0.93 0.012 85);
+  isolation: isolate;
+}
+/* El fondo blanco del GIF se funde con el hueso; el rojo de los músculos se mantiene. */
+.anim-ej-img {
+  mix-blend-mode: multiply;
+}
+.mapa-muscular svg {
+  overflow: visible;
+}
+.mapa-muscular .musculo-principal {
+  animation: musculo-late 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 3px rgb(232 52 74 / 0.7));
+}
+@keyframes musculo-late {
+  0%, 100% { opacity: 0.75; }
+  45% { opacity: 1; }
+}
+.solo-reducido {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .solo-movimiento {
+    display: none;
+  }
+  .solo-reducido {
+    display: block;
+  }
+  .mapa-muscular .musculo-principal {
+    animation: none;
+  }
+}
