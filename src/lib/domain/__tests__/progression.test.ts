@@ -145,3 +145,24 @@ describe("la última vez y récords", () => {
     expect(recordAnterior(logs, "otro")).toBe(0);
   });
 });
+
+describe("pesos de máquina y calentamiento", () => {
+  it("ajusta al peso que existe en la máquina", async () => {
+    const { ajustarAMaquina } = await import("../progression");
+    const m = { paso: 7, minimo: 7 };
+    expect(ajustarAMaquina(30, m)).toBe(28);
+    expect(ajustarAMaquina(32, m)).toBe(35);
+    expect(ajustarAMaquina(2, m)).toBe(7);
+    expect(ajustarAMaquina(31.3, undefined)).toBe(31.5);
+  });
+  it("propone 1 o 2 series de calentamiento según el peso", async () => {
+    const { seriesCalentamiento } = await import("../progression");
+    expect(seriesCalentamiento(40, 5)).toEqual([
+      { pesoKg: 20, reps: 10 },
+      { pesoKg: 30, reps: 5 },
+    ]);
+    expect(seriesCalentamiento(15, 5)).toEqual([{ pesoKg: 7.5, reps: 10 }]);
+    expect(seriesCalentamiento(5, 5)).toEqual([]);
+    expect(seriesCalentamiento(null, 5)).toEqual([]);
+  });
+});

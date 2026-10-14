@@ -320,3 +320,49 @@ export function resumenSeries(l: ExerciseLog, medida: "reps" | "segundos" = "rep
 export function recordAnterior(logs: ExerciseLog[], exerciseId: string): number {
   return Math.max(0, ...logs.filter((l) => l.exerciseId === exerciseId).map(mejorE1rm));
 }
+
+// ── Pesos reales de cada máquina ──
+
+/** Cómo sube el peso en una máquina concreta (p. ej. de 5 en 5 kg desde 5 kg). */
+export interface PesosMaquina {
+  paso: number;
+  minimo: number;
+}
+
+/** Ajusta un peso al valor más cercano que existe en esa máquina. */
+export function ajustarAMaquina(kg: number, m: PesosMaquina | undefined): number {
+  if (!m || m.paso <= 0) return redondearPeso(kg);
+  const k = Math.max(0, Math.round((kg - m.minimo) / m.paso));
+  return Math.round((m.minimo + k * m.paso) * 100) / 100;
+}
+
+/** Incrementos con el de este ejercicio sustituido por el paso de su máquina (si lo tiene). */
+export function incrementosCon(tipo: LoadType, inc: Incrementos, m: PesosMaquina | undefined): Incrementos {
+  if (!m) return inc;
+  const clave: keyof Incrementos =
+    tipo === "mancuerna" ? "mancuerna" : tipo === "polea" ? "polea" : tipo === "kettlebell" ? "kettlebell" : tipo === "maquina" ? "maquina" : "smith";
+  return { ...inc, [clave]: m.paso };
+}
+
+// ── Calentamiento ──
+
+export interface SerieCalentamiento {
+  pesoKg: number;
+  reps: number;
+}
+
+/**
+ * Series de aproximación antes de la primera serie efectiva: ~50 % × 10 y, si el peso
+ * de trabajo es alto para esa máquina, ~75 % × 5. Sin peso o muy ligero, nada.
+ */
+export function seriesCalentamiento(pesoTrabajo: number | null, paso: number, m?: PesosMaquina): SerieCalentamiento[] {
+  if (!pesoTrabajo || pesoTrabajo < 2 * paso) return [];
+  const out: SerieCalentamiento[] = [];
+  const ligero = ajustarAMaquina(pesoTrabajo * 0.5, m);
+  if (ligero > 0 && ligero < pesoTrabajo) out.push({ pesoKg: ligero, reps: 10 });
+  if (pesoTrabajo >= 4 * paso) {
+    const medio = ajustarAMaquina(pesoTrabajo * 0.75, m);
+    if (medio > ligero && medio < pesoTrabajo) out.push({ pesoKg: medio, reps: 5 });
+  }
+  return out;
+}

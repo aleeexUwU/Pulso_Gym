@@ -124,3 +124,13 @@ describe("rachas", () => {
     expect(mejorRacha(["2026-10-01", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07"])).toBe(3);
   });
 });
+
+describe("calentamiento en la sesión", () => {
+  it("solo en el primer ejercicio que trabaja cada músculo", async () => {
+    const { tocaCalentar } = await import("@/lib/app/gimnasio");
+    const ejs = [{ exerciseId: "press_pecho_maquina" }, { exerciseId: "contractora" }, { exerciseId: "jalon_pecho" }];
+    expect(tocaCalentar(ejs, 0)).toBe(true);
+    expect(tocaCalentar(ejs, 1)).toBe(false); // el pecho ya se ha trabajado
+    expect(tocaCalentar(ejs, 2)).toBe(true); // dorsal nuevo
+  });
+});

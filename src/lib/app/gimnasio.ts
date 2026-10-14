@@ -1,17 +1,20 @@
 import { diasEntre, hoyISO, sumarDias } from "@/lib/domain/dates";
 import { ejercicio } from "@/lib/domain/exercises";
 import {
+  ajustarAMaquina,
   aplicarDescarga,
   aplicarRampa,
   incrementoPara,
+  incrementosCon,
   pesoDescarga,
   redondearPeso,
   sugerirCarga,
   type ExerciseLog,
+  type PesosMaquina,
 } from "@/lib/domain/progression";
 import type { PlanDay, PlannedExercise, Profile, Settings } from "@/lib/domain/types";
 import { db } from "@/lib/db/db";
-import { guardar, nuevoId, vivos } from "@/lib/db/repo";
+import { escribirKv, guardar, leerKv, nuevoId, vivos } from "@/lib/db/repo";
 import type { Workout, WorkoutExercise } from "@/lib/db/types";
 
 /** Historial por ejercicio a partir de las sesiones completadas. */
@@ -49,18 +52,23 @@ export function prepararEjercicio(
   ajustes: Settings,
   logs: ExerciseLog[],
   hoy = hoyISO(),
+  maquinas: Record<string, PesosMaquina> = {},
 ): WorkoutExercise {
   const e = ejercicio(pe.exerciseId);
+  const maquina = maquinas[e.id];
+  const inc = incrementosCon(e.tipoCarga, ajustes.incrementos, maquina);
   const descarga = enDescarga(ajustes, hoy);
   let p = aplicarRampa(pe, semanaPrograma(ajustes, hoy));
   if (descarga) p = aplicarDescarga(p);
-  const sug = sugerirCarga(e, { repsMin: pe.repsMin, repsMax: pe.repsMax }, logs, ajustes.incrementos, perfil);
-  const peso = descarga ? pesoDescarga(sug.pesoKg) : sug.pesoKg;
-  const paso = incrementoPara(e.tipoCarga, ajustes.incrementos);
+  const sug = sugerirCarga(e, { repsMin: pe.repsMin, repsMax: pe.repsMax }, logs, inc, perfil);
+  const sugerido = descarga ? pesoDescarga(sug.pesoKg) : sug.pesoKg;
+  // Solo pesos que existen en esa máquina (si se ha configurado).
+  const peso = sugerido == null ? null : ajustarAMaquina(sugerido, maquina);
+  const paso = incrementoPara(e.tipoCarga, inc);
   const series = Array.from({ length: p.series }, (_, i) => {
     // En calibración el objetivo sube serie a serie hasta dar con el peso de trabajo.
     const objetivoPeso =
-      peso == null ? null : sug.estado === "calibracion" ? redondearPeso(peso + paso * i) : peso;
+      peso == null ? null : sug.estado === "calibracion" ? ajustarAMaquina(redondearPeso(peso + paso * i), maquina) : peso;
     return {
       objetivoPeso,
       objetivoReps: sug.repsObjetivo,
@@ -93,6 +101,7 @@ export async function iniciarWorkout(dia: PlanDay, perfil: Profile, ajustes: Set
   const abierta = todos.find((w) => w.estado === "en_curso" && w.planDayId === dia.id && w.fecha >= sumarDias(hoy, -1));
   if (abierta) return abierta.id;
   const logs = logsDeWorkouts(todos);
+  const maquinas = (await leerKv("pesosMaquina")) ?? {};
   const w = await guardar<Workout>("workouts", {
     id: nuevoId(),
     fecha: hoy,
@@ -101,7 +110,7 @@ export async function iniciarWorkout(dia: PlanDay, perfil: Profile, ajustes: Set
     estado: "en_curso",
     inicio: new Date().toISOString(),
     descarga: enDescarga(ajustes, hoy),
-    ejercicios: dia.ejercicios.map((pe) => prepararEjercicio(pe, perfil, ajustes, logs, hoy)),
+    ejercicios: dia.ejercicios.map((pe) => prepararEjercicio(pe, perfil, ajustes, logs, hoy, maquinas)),
     notas: "",
   });
   return w.id;
@@ -148,4 +157,56 @@ export async function sustituirEnWorkout(
     nuevo.sustituyeA = viejo.sustituyeA ?? viejo.exerciseId;
     w.ejercicios[idx] = nuevo;
   });
+}
+
+/**
+ * "Hacer luego" (máquina ocupada): mueve el ejercicio al final de la sesión. Si iba en
+ * biserie, la pareja se deshace (los dos quedan como ejercicios normales).
+ */
+export async function hacerLuego(workoutId: string, idx: number): Promise<void> {
+  await mutarWorkout(workoutId, (w) => {
+    const [ej] = w.ejercicios.splice(idx, 1);
+    if (!ej) return;
+    if (ej.biserie) {
+      for (const x of w.ejercicios) if (x.biserie === ej.biserie) delete x.biserie;
+      delete ej.biserie;
+    }
+    w.ejercicios.push(ej);
+  });
+}
+
+/**
+ * Guarda cómo sube el peso en la máquina de un ejercicio (o lo quita con null) y ajusta
+ * a esos valores las series pendientes de la sesión en curso.
+ */
+export async function configurarMaquina(exerciseId: string, cfg: PesosMaquina | null, workoutId?: string): Promise<void> {
+  const actuales = { ...((await leerKv("pesosMaquina")) ?? {}) };
+  if (cfg) actuales[exerciseId] = cfg;
+  else delete actuales[exerciseId];
+  await escribirKv("pesosMaquina", actuales);
+  if (!cfg || !workoutId) return;
+  await mutarWorkout(workoutId, (w) => {
+    for (const ej of w.ejercicios) {
+      if (ej.exerciseId !== exerciseId) continue;
+      for (const s of ej.series) {
+        if (s.hecho) continue;
+        if (s.objetivoPeso != null) s.objetivoPeso = ajustarAMaquina(s.objetivoPeso, cfg);
+        if (s.pesoKg != null) s.pesoKg = ajustarAMaquina(s.pesoKg, cfg);
+      }
+    }
+  });
+}
+
+/**
+ * ¿Toca calentar antes de este ejercicio? Sí si trabaja como principal algún músculo que
+ * ningún ejercicio anterior de la sesión haya movido ya (aunque sea de forma secundaria).
+ */
+export function tocaCalentar(ejercicios: { exerciseId: string }[], idx: number): boolean {
+  const e = ejercicio(ejercicios[idx].exerciseId);
+  if (e.cargaInicial == null) return false;
+  const calientes = new Set<string>();
+  for (const x of ejercicios.slice(0, idx)) {
+    for (const [g, w] of Object.entries(ejercicio(x.exerciseId).musculos)) if ((w ?? 0) >= 0.5) calientes.add(g);
+  }
+  return Object.entries(e.musculos).some(([g, w]) => (w ?? 0) >= 1 && !calientes.has(g));
 }

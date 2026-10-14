@@ -1,4 +1,5 @@
 import type { ArmAssessment } from "@/lib/domain/left-arm";
+import type { PesosMaquina } from "@/lib/domain/progression";
 import type { Plan, Profile, Settings } from "@/lib/domain/types";
 import { db, type Coleccion } from "./db";
 import type { KvRow, Receta, SyncMeta } from "./types";
@@ -44,7 +45,7 @@ export const vivos = <T extends SyncMeta>(rows: T[]) => rows.filter((r) => !r._d
 
 // ── Clave-valor: perfil, ajustes, plan, evaluación del brazo ──
 
-export type ClaveKv = "perfil" | "ajustes" | "plan" | "evaluacionBrazo" | "recetas";
+export type ClaveKv = "perfil" | "ajustes" | "plan" | "evaluacionBrazo" | "recetas" | "pesosMaquina";
 
 export interface ValoresKv {
   perfil: Profile;
@@ -52,6 +53,8 @@ export interface ValoresKv {
   plan: Plan;
   evaluacionBrazo: ArmAssessment;
   recetas: Receta[];
+  /** Pesos reales por ejercicio/máquina (paso y mínimo). */
+  pesosMaquina: Record<string, PesosMaquina>;
 }
 
 export async function leerKv<K extends ClaveKv>(clave: K): Promise<ValoresKv[K] | undefined> {

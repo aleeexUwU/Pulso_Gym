@@ -16,6 +16,7 @@ export function useKv<K extends ClaveKv>(clave: K): ValoresKv[K] | null | undefi
 export const usePerfil = () => useKv("perfil");
 export const usePlan = () => useKv("plan");
 export const useEvaluacionBrazo = () => useKv("evaluacionBrazo");
+export const usePesosMaquina = () => useKv("pesosMaquina");
 
 /** Batidos y recetas guardados, los más usados primero. */
 export function useRecetas(): Receta[] | undefined {

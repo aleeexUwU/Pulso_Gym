@@ -5,7 +5,9 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   BookOpen,
+  Clock3,
   Lightbulb,
+  Settings2,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +25,8 @@ import { toast } from "sonner";
 import { ExerciseImage } from "@/components/exercise/exercise-image";
 import { Kakugan } from "@/components/kakugan";
 import { ConsejosSheet, NotaEjercicio, TecnicaSheet } from "@/components/exercise/technique";
+import { Calentamiento } from "@/components/gym/calentamiento";
+import { MaquinaDialog } from "@/components/gym/maquina-dialog";
 import { SustituirDialog } from "@/components/gym/sustituir-dialog";
 import { FlashSangre } from "@/components/flash-sangre";
 import { RestTimer, type Descanso } from "@/components/rest-timer";
@@ -30,14 +34,17 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Aviso, Cargando, Chips, Glass, Stat, Stepper } from "@/components/ui-kit";
-import { completarWorkout, logsDeWorkouts, mutarWorkout, sustituirEnWorkout } from "@/lib/app/gimnasio";
+import { completarWorkout, hacerLuego, logsDeWorkouts, mutarWorkout, sustituirEnWorkout, tocaCalentar } from "@/lib/app/gimnasio";
 import { marcarDolorEnPlan } from "@/lib/app/planificacion";
-import { useAjustes, usePerfil, useWorkout, useWorkouts } from "@/lib/db/hooks";
+import { useAjustes, usePerfil, usePesosMaquina, useWorkout, useWorkouts } from "@/lib/db/hooks";
 import type { Workout, WorkoutExercise, WorkoutSet } from "@/lib/db/types";
 import { ejercicio } from "@/lib/domain/exercises";
 import {
+  ajustarAMaquina,
   e1rm,
   incrementoPara,
+  incrementosCon,
+  seriesCalentamiento,
   mejorE1rm,
   recordAnterior,
   redondearPeso,
@@ -110,6 +117,8 @@ function Sesion() {
   const [destino, setDestino] = useState<number | null>(null);
   const [tecnica, setTecnica] = useState<string | null>(null);
   const [consejos, setConsejos] = useState<string | null>(null);
+  const [verMaquina, setVerMaquina] = useState(false);
+  const pesosMaquina = usePesosMaquina();
   const [sustituir, setSustituir] = useState(false);
   const [verNotas, setVerNotas] = useState(false);
   const [flash, setFlash] = useState(0);
@@ -148,7 +157,8 @@ function Sesion() {
   const e = ejercicio(ej.exerciseId);
   const total = workout.ejercicios.reduce((t, x) => t + x.series.length, 0);
   const hechas = workout.ejercicios.reduce((t, x) => t + x.series.filter((s) => s.hecho).length, 0);
-  const paso = PASO_STEPPER[e.tipoCarga];
+  const maquina = pesosMaquina?.[e.id];
+  const paso = maquina?.paso ?? PASO_STEPPER[e.tipoCarga];
   const conPeso = e.cargaInicial != null;
   const pareja = ej.biserie
     ? workout.ejercicios.findIndex((x, i) => i !== idx && x.biserie === ej.biserie)
@@ -158,7 +168,7 @@ function Sesion() {
     if (!workout || serieActiva < 0) return;
     const s = serieActiva;
     const yaEstaba = ej!.series[s].hecho;
-    const incr = incrementoPara(e.tipoCarga, ajustes!.incrementos);
+    const incr = incrementoPara(e.tipoCarga, incrementosCon(e.tipoCarga, ajustes!.incrementos, maquina));
     let siguiente: Workout | null = null;
     await mutarWorkout(workout.id, (w) => {
       const x = w.ejercicios[idx];
@@ -170,7 +180,10 @@ function Sesion() {
         if (x.estado === "calibracion") {
           const rir = borrador.rir;
           const usado = borrador.pesoKg;
-          sig.pesoKg = redondearPeso(rir == null ? Math.max(sig.objetivoPeso ?? 0, usado) : rir >= 4 ? usado + incr : rir >= 2 ? usado : usado - incr);
+          sig.pesoKg = ajustarAMaquina(
+            redondearPeso(rir == null ? Math.max(sig.objetivoPeso ?? 0, usado) : rir >= 4 ? usado + incr : rir >= 2 ? usado : usado - incr),
+            maquina,
+          );
           sig.objetivoPeso = sig.pesoKg;
         } else if (sig.pesoKg === sig.objetivoPeso) {
           sig.pesoKg = borrador.pesoKg;
@@ -384,19 +397,45 @@ function Sesion() {
                 tienes tu peso; con 0–1, baja.
               </p>
             )}
+            {conPeso && (
+              <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground" onClick={() => setVerMaquina(true)}>
+                <Settings2 className="size-3.5" aria-hidden />
+                {maquina
+                  ? `Esta máquina: de ${String(maquina.paso).replace(".", ",")} en ${String(maquina.paso).replace(".", ",")} kg desde ${String(maquina.minimo).replace(".", ",")}`
+                  : "¿Tu máquina sube de otra forma? Ajusta sus pesos"}
+              </button>
+            )}
             {ej.ultimoRecurso && (
               <Aviso tipo="warn">
                 Último recurso (Smith).{" "}
                 {ej.alternativaPreferida && <>Preferible si está libre: {ejercicio(ej.alternativaPreferida).nombre}.</>}
               </Aviso>
             )}
-            <Button
-              variant="outline"
-              className="h-12 w-full rounded-xl border-primary/40 bg-primary/10 text-base text-primary"
-              onClick={() => setConsejos(e.id)}
-            >
-              <Lightbulb /> Consejos
-            </Button>
+            <div className="flex gap-1.5">
+              <Button
+                variant="outline"
+                className="h-12 flex-1 rounded-xl border-primary/40 bg-primary/10 text-base text-primary"
+                onClick={() => setConsejos(e.id)}
+              >
+                <Lightbulb /> Consejos
+              </Button>
+              {pendientes(ej) > 0 && workout.ejercicios.some((x, i) => i !== idx && pendientes(x) > 0) && (
+                <Button
+                  variant="secondary"
+                  className="h-12 rounded-xl px-3 text-sm"
+                  onClick={async () => {
+                    await hacerLuego(workout.id, idx);
+                    setDir(1);
+                    setEditando(null);
+                    // Se queda en la misma posición, donde ahora está el siguiente ejercicio.
+                    setIdx(Math.min(idx, workout.ejercicios.length - 2));
+                    toast.success(`${e.nombre} pasa al final de la sesión`);
+                  }}
+                >
+                  <Clock3 /> Hacer luego
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-4 gap-1.5">
               <Button variant="secondary" className="h-11 rounded-xl px-1 text-xs" onClick={() => setTecnica(e.id)}>
                 <BookOpen /> Técnica
@@ -414,6 +453,13 @@ function Sesion() {
             {verNotas && <NotaEjercicio exerciseId={e.id} />}
           </Glass>
           </motion.div>
+
+          {conPeso && !ej.series[0]?.hecho && tocaCalentar(workout.ejercicios, idx) && (
+            <Calentamiento
+              key={`${workout.id}-${idx}-${e.id}`}
+              series={seriesCalentamiento(ej.series[0]?.objetivoPeso ?? null, paso, maquina)}
+            />
+          )}
 
           {/* Series */}
           <ol className="space-y-2">
@@ -533,6 +579,15 @@ function Sesion() {
       <FlashSangre disparo={flash} />
       <TecnicaSheet exerciseId={tecnica} onOpenChange={(a) => !a && setTecnica(null)} />
       <ConsejosSheet exerciseId={consejos} prescripcion={ej} onOpenChange={(a) => !a && setConsejos(null)} />
+      <MaquinaDialog
+        key={`${e.id}-${verMaquina}`}
+        exerciseId={e.id}
+        nombre={e.nombre}
+        actual={maquina}
+        workoutId={workout.id}
+        abierto={verMaquina}
+        onOpenChange={setVerMaquina}
+      />
       <SustituirDialog
         exerciseId={sustituir ? e.id : null}
         perfil={perfil}
