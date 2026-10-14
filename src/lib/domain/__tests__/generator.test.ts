@@ -220,6 +220,11 @@ describe("principiante: sin mancuernas y prioridad de tren superior (3 días)", 
     }
   });
 
+  it("máquina guiada antes que polea: sin cruce en polea si hay press y contractora", () => {
+    const ids = plan.dias.flatMap((d) => d.ejercicios.map((pe) => pe.exerciseId));
+    expect(ids).not.toContain("cruce_polea_una_mano");
+  });
+
   it("sesiones de duración razonable", () => {
     for (const d of plan.dias) {
       expect(d.duracionEstimadaMin).toBeLessThanOrEqual(90);

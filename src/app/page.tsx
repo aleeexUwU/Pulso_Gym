@@ -63,7 +63,7 @@ export default function Gimnasio() {
     if (!plan || (plan.version ?? 1) >= VERSION_PLAN || regenerando.current) return;
     regenerando.current = true;
     regenerarPlan()
-      .then(() => toast.success("Rutina actualizada: máquinas y poleas primero, y más trabajo de torso."))
+      .then(() => toast.success("Rutina actualizada: máquinas guiadas primero y más trabajo de torso."))
       .catch(() => {
         regenerando.current = false;
       });

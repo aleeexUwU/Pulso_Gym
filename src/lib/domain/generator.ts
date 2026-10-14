@@ -42,7 +42,7 @@ export interface GeneratorInput {
 export type Prioridad = "superior" | "equilibrado";
 
 /** Versión del generador: si un plan guardado es de una versión anterior, se regenera. */
-export const VERSION_PLAN = 2;
+export const VERSION_PLAN = 3;
 
 export const MAX_SERIES_EJERCICIO = 4;
 
@@ -84,16 +84,31 @@ export function filtroDe(
 }
 
 /**
+ * Preferencia por tipo de carga con "máquinas primero": 0 máquina guiada, 1 polea,
+ * 2 resto (peso corporal, banda...), 3 mancuerna. Sin esa opción, todos valen 0.
+ */
+export function nivelCarga(e: Exercise, filtro: Pick<FiltroEjercicios, "evitarMancuernas">): number {
+  if (!filtro.evitarMancuernas) return 0;
+  if (e.tipoCarga === "maquina") return 0;
+  if (e.tipoCarga === "polea") return 1;
+  if (e.tipoCarga === "mancuerna") return 3;
+  return 2;
+}
+
+/**
  * Ejercicios válidos para un grupo como músculo principal. La Smith solo entra
  * si no hay NINGUNA alternativa con el material configurado (último recurso).
- * Con `evitarMancuernas`, las mancuernas solo entran si no hay máquina, polea ni otra opción.
+ * Con `evitarMancuernas` ("máquinas primero") el orden es máquina guiada → polea → resto,
+ * y las mancuernas solo entran si no hay ninguna otra opción.
  */
 export function candidatos(grupo: MuscleGroup, filtro: FiltroEjercicios): { lista: Exercise[]; ultimoRecurso: boolean } {
   const validos = EJERCICIOS_GIMNASIO.filter((e) => (e.musculos[grupo] ?? 0) >= 1 && ejercicioPermitido(e, filtro));
   const orden = (a: Exercise, b: Exercise) => a.prioridad - b.prioridad || Number(b.compuesto) - Number(a.compuesto);
   const sinSmith = validos.filter((e) => !e.smith).sort(orden);
   if (filtro.evitarMancuernas) {
-    const sinMancuerna = sinSmith.filter((e) => e.tipoCarga !== "mancuerna");
+    const sinMancuerna = sinSmith
+      .filter((e) => e.tipoCarga !== "mancuerna")
+      .sort((a, b) => nivelCarga(a, filtro) - nivelCarga(b, filtro) || orden(a, b));
     if (sinMancuerna.length > 0) return { lista: sinMancuerna, ultimoRecurso: false };
   }
   if (sinSmith.length > 0) return { lista: sinSmith, ultimoRecurso: false };
@@ -193,11 +208,16 @@ function tieneDirecto(s: Sesion, g: MuscleGroup): boolean {
   return s.items.some((it) => (it.ex.musculos[g] ?? 0) >= 1);
 }
 
-/** Elige un candidato que no esté ya en la sesión, rotando para variar entre días. */
-function elegir(lista: Exercise[], sesion: Sesion, rotacion: number): Exercise | undefined {
+/**
+ * Elige un candidato que no esté ya en la sesión, rotando para variar entre días
+ * (solo entre los del mejor tipo de carga disponible: no rota de máquina a polea).
+ */
+function elegir(lista: Exercise[], sesion: Sesion, rotacion: number, filtro: FiltroEjercicios): Exercise | undefined {
   const libres = lista.filter((e) => !sesion.items.some((it) => it.ex.id === e.id));
   if (libres.length === 0) return undefined;
-  return libres[rotacion % libres.length];
+  const mejor = Math.min(...libres.map((e) => nivelCarga(e, filtro)));
+  const top = libres.filter((e) => nivelCarga(e, filtro) === mejor);
+  return top[rotacion % top.length];
 }
 
 /**
@@ -245,9 +265,11 @@ function completarCobertura(sesiones: Sesion[], input: GeneratorInput, filtro: F
       if (c.lista.length === 0) continue;
       sesiones.forEach((s) => {
         if (!gruposDe(s.enfoque).includes(g)) return;
-        const e = elegir(c.lista, s, 0);
+        const e = elegir(c.lista, s, 0, filtro);
         if (!e) return;
-        proponer(ganancia(e, SERIES_INICIALES) / ((SERIES_INICIALES + 0.75) * carga(s)), () => {
+        // Con "máquinas primero", añadir una polea (u otra cosa) puntúa menos que subir series a una máquina.
+        const preferencia = 1 + 0.6 * nivelCarga(e, filtro);
+        proponer(ganancia(e, SERIES_INICIALES) / ((SERIES_INICIALES + 0.75) * carga(s) * preferencia), () => {
           s.items.push({ ex: e, series: SERIES_INICIALES, ultimoRecurso: c.ultimoRecurso });
         });
       });
@@ -386,7 +408,7 @@ export function generarPlan(input: GeneratorInput): Plan {
       if (cobertura(sesiones, extra)[g] >= minimoGrupo(g, input)) continue;
       const c = cand.get(g)!;
       const k = vecesGrupo.get(g) ?? 0;
-      const e = elegir(c.lista, s, k);
+      const e = elegir(c.lista, s, k, filtro);
       if (!e) continue;
       s.items.push({ ex: e, series: SERIES_INICIALES, ultimoRecurso: c.ultimoRecurso });
       vecesGrupo.set(g, k + 1);
@@ -399,7 +421,7 @@ export function generarPlan(input: GeneratorInput): Plan {
     if (posibles.length === 0 || posibles.some((s) => tieneDirecto(s, g))) return;
     const s = posibles[idx % posibles.length];
     const c = cand.get(g)!;
-    const e = elegir(c.lista, s, 0);
+    const e = elegir(c.lista, s, 0, filtro);
     if (e) s.items.push({ ex: e, series: SERIES_INICIALES, ultimoRecurso: c.ultimoRecurso });
   });
 

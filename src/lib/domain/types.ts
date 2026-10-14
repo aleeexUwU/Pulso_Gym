@@ -40,6 +40,7 @@ export type Equipment =
   | "press_hombro_maquina"
   | "contractora"
   | "remo_maquina"
+  | "jalon_maquina"
   | "curl_biceps_maquina"
   | "kettlebell"
   | "banda_elastica"

@@ -90,6 +90,7 @@ export const EQUIPO_NOMBRE: Record<Equipment, string> = {
   press_hombro_maquina: "Press de hombro en máquina",
   contractora: "Contractora (pec deck)",
   remo_maquina: "Remo en máquina",
+  jalon_maquina: "Jalón en máquina (palanca)",
   curl_biceps_maquina: "Curl de bíceps en máquina",
   kettlebell: "Kettlebells",
   banda_elastica: "Bandas elásticas",

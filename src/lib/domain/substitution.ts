@@ -1,4 +1,5 @@
 import { EJERCICIOS_GIMNASIO, ejercicio } from "./exercises";
+import { nivelCarga } from "./generator";
 import { ejercicioPermitido, type FiltroEjercicios } from "./limitations";
 import type { Exercise, MuscleGroup, Plan } from "./types";
 
@@ -36,10 +37,9 @@ export function alternativas(exerciseId: string, filtro: FiltroEjercicios, yaEnS
   );
   const sinSmith = pool.filter((e) => !e.smith);
   const lista = sinSmith.length ? sinSmith : pool;
-  const mancuerna = (e: Exercise) => (filtro.evitarMancuernas && e.tipoCarga === "mancuerna" ? 1 : 0);
   return lista.sort(
     (a, b) =>
-      mancuerna(a) - mancuerna(b) ||
+      nivelCarga(a, filtro) - nivelCarga(b, filtro) ||
       similitud(original, b) - similitud(original, a) ||
       Number(b.compuesto === original.compuesto) - Number(a.compuesto === original.compuesto) ||
       a.prioridad - b.prioridad,
