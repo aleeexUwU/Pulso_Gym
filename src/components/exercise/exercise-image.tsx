@@ -34,6 +34,7 @@ export function ExerciseImage({
   const imgs = imagenesEjercicio(ejercicio);
   const [error, setError] = useState(false);
   const [pausado, setPausado] = useState(false);
+  const [cargada, setCargada] = useState(false);
 
   if (!imgs || error) {
     return (
@@ -55,8 +56,22 @@ export function ExerciseImage({
     />
   );
 
+  // Miniatura: recortada a la persona (sin bandas), fondo oscuro mientras carga y aparece con un fundido.
   if (!animar) {
-    return <div className={cn("foto-ej relative overflow-hidden rounded-2xl", className)}>{foto(imgs[0], 0)}</div>;
+    return (
+      <div className={cn("foto-mini relative overflow-hidden rounded-xl", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- exportación estática, imágenes ya optimizadas en WebP */}
+        <img
+          src={imgs[0]}
+          alt={`${ejercicio.nombre}: posición inicial`}
+          className={cn("foto-mini-img absolute inset-0 size-full object-cover", cargada && "cargada")}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setCargada(true)}
+          onError={() => setError(true)}
+        />
+      </div>
+    );
   }
 
   const contenido = (

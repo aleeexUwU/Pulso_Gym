@@ -324,7 +324,7 @@ function Sesion() {
           <Glass className="space-y-3">
             <div className="flex gap-3">
               <button type="button" onClick={() => setTecnica(e.id)} aria-label="Ver técnica">
-                <ExerciseImage ejercicio={e} className="size-24 shrink-0" />
+                <ExerciseImage ejercicio={e} animar={false} className="size-24 shrink-0" />
               </button>
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">

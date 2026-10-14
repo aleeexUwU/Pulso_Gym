@@ -522,3 +522,19 @@
     display: grid;
   }
 }
+
+/* Miniaturas de ejercicios: recorte a la persona, blanco y negro con contraste y fundido al cargar. */
+.foto-mini {
+  background: var(--secondary);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.foto-mini-img {
+  object-position: 50% 35%;
+  scale: 1.18;
+  opacity: 0;
+  filter: grayscale(1) contrast(1.12) brightness(1.05);
+  transition: opacity 250ms ease-out;
+}
+.foto-mini-img.cargada {
+  opacity: 1;
+}
