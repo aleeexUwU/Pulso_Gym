@@ -42,7 +42,7 @@ export interface GeneratorInput {
 export type Prioridad = "superior" | "equilibrado";
 
 /** Versión del generador: si un plan guardado es de una versión anterior, se regenera. */
-export const VERSION_PLAN = 3;
+export const VERSION_PLAN = 4;
 
 export const MAX_SERIES_EJERCICIO = 4;
 
@@ -83,12 +83,19 @@ export function filtroDe(
   return { equipo: input.equipo, limitaciones: input.limitaciones, excluidos: input.excluidos, evitarMancuernas: input.evitarMancuernas };
 }
 
+/** Ejercicio de antebrazo con mancuerna: se permite y se prefiere aunque se eviten las mancuernas. */
+function mancuernaDeAntebrazo(e: Exercise): boolean {
+  return e.tipoCarga === "mancuerna" && (e.musculos.antebrazo ?? 0) >= 1;
+}
+
 /**
  * Preferencia por tipo de carga con "máquinas primero": 0 máquina guiada, 1 polea,
  * 2 resto (peso corporal, banda...), 3 mancuerna. Sin esa opción, todos valen 0.
+ * Excepción: el antebrazo se prefiere con mancuerna (curl y extensión de muñeca).
  */
 export function nivelCarga(e: Exercise, filtro: Pick<FiltroEjercicios, "evitarMancuernas">): number {
   if (!filtro.evitarMancuernas) return 0;
+  if (mancuernaDeAntebrazo(e)) return 0;
   if (e.tipoCarga === "maquina") return 0;
   if (e.tipoCarga === "polea") return 1;
   if (e.tipoCarga === "mancuerna") return 3;
@@ -107,7 +114,7 @@ export function candidatos(grupo: MuscleGroup, filtro: FiltroEjercicios): { list
   const sinSmith = validos.filter((e) => !e.smith).sort(orden);
   if (filtro.evitarMancuernas) {
     const sinMancuerna = sinSmith
-      .filter((e) => e.tipoCarga !== "mancuerna")
+      .filter((e) => e.tipoCarga !== "mancuerna" || mancuernaDeAntebrazo(e))
       .sort((a, b) => nivelCarga(a, filtro) - nivelCarga(b, filtro) || orden(a, b));
     if (sinMancuerna.length > 0) return { lista: sinMancuerna, ultimoRecurso: false };
   }

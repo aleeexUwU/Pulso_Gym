@@ -198,9 +198,13 @@ describe("principiante: sin mancuernas y prioridad de tren superior (3 días)", 
   const input = entrada([1, 3, 5], { evitarMancuernas: true, prioridad: "superior" });
   const plan = generarPlan(input);
 
-  it("no usa mancuernas si hay máquina o polea para el grupo", () => {
-    const conMancuerna = plan.dias.flatMap((d) => d.ejercicios).filter((pe) => ejercicio(pe.exerciseId).tipoCarga === "mancuerna");
-    expect(conMancuerna.map((pe) => pe.exerciseId)).toEqual([]);
+  it("no usa mancuernas si hay máquina o polea para el grupo, salvo el antebrazo", () => {
+    const todos = plan.dias.flatMap((d) => d.ejercicios.map((pe) => ejercicio(pe.exerciseId)));
+    const conMancuerna = todos.filter((e) => e.tipoCarga === "mancuerna" && (e.musculos.antebrazo ?? 0) < 1);
+    expect(conMancuerna.map((e) => e.id)).toEqual([]);
+    const antebrazo = todos.filter((e) => (e.musculos.antebrazo ?? 0) >= 1);
+    expect(antebrazo.length).toBeGreaterThan(0);
+    for (const e of antebrazo) expect(e.tipoCarga, e.id).toBe("mancuerna");
   });
 
   it("torso con 2 series más que el mínimo y pierna con menos, todo cubierto", () => {

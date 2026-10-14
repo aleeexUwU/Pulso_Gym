@@ -194,7 +194,7 @@ export default function Ajustes() {
         <label className="flex items-center justify-between gap-3 text-sm">
           <span>
             Máquinas primero
-            <span className="block text-xs text-muted-foreground">Máquina guiada siempre que exista; polea solo si no hay máquina y mancuernas solo si no queda otra.</span>
+            <span className="block text-xs text-muted-foreground">Máquina guiada siempre que exista; polea solo si no hay máquina y mancuernas solo si no queda otra (el antebrazo sí va con mancuerna).</span>
           </span>
           <Switch checked={ajustes.evitarMancuernas} onCheckedChange={(v) => ajustesYRegenerar({ evitarMancuernas: v })} />
         </label>
