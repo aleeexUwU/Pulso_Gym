@@ -24,6 +24,7 @@ import { SustituirDialog } from "@/components/gym/sustituir-dialog";
 import { Button } from "@/components/ui/button";
 import { Aviso, Cargando, Glass, PageHeader, SectionTitle } from "@/components/ui-kit";
 import { Logo } from "@/components/kakugan";
+import { AvisoSync } from "@/components/aviso-sync";
 import { ResumenHoy } from "@/components/resumen-hoy";
 import { WeekStrip } from "@/components/week-strip";
 import { enDescarga, iniciarWorkout, logsDeWorkouts, semanaPrograma } from "@/lib/app/gimnasio";
@@ -131,6 +132,7 @@ export default function Gimnasio() {
         </p>
       </div>
 
+      <AvisoSync />
       <ResumenHoy />
 
       <WeekStrip desde={lunes} actividades={actividades} hechas={hechas} />

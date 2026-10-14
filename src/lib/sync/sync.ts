@@ -129,7 +129,13 @@ async function subir(uid: string) {
 
 let temporizador: ReturnType<typeof setTimeout> | null = null;
 
-/** Programa una sincronización (con espera) tras cambios locales y al recuperar la red. */
+/** Cada cuánto se miran cambios de otros dispositivos mientras la app está a la vista. */
+const INTERVALO_MS = 30_000;
+
+/**
+ * Sincroniza al abrir, tras cambios locales, al recuperar la red, al volver a la app
+ * (una PWA en el móvil casi nunca se cierra del todo) y cada 30 s mientras está visible.
+ */
 export function iniciarSyncAutomatica(): () => void {
   const programar = () => {
     if (temporizador) clearTimeout(temporizador);
@@ -138,6 +144,13 @@ export function iniciarSyncAutomatica(): () => void {
   const quitar = onCambioLocal(programar);
   const online = () => void sincronizar();
   window.addEventListener("online", online);
+  const visible = () => {
+    if (document.visibilityState === "visible") void sincronizar();
+  };
+  document.addEventListener("visibilitychange", visible);
+  window.addEventListener("focus", visible);
+  window.addEventListener("pageshow", visible);
+  const intervalo = setInterval(visible, INTERVALO_MS);
   const sb = supabase();
   const sub = sb?.auth.onAuthStateChange((evento) => {
     if (evento === "SIGNED_IN" || evento === "TOKEN_REFRESHED") void sincronizar();
@@ -147,6 +160,10 @@ export function iniciarSyncAutomatica(): () => void {
   return () => {
     quitar();
     window.removeEventListener("online", online);
+    document.removeEventListener("visibilitychange", visible);
+    window.removeEventListener("focus", visible);
+    window.removeEventListener("pageshow", visible);
+    clearInterval(intervalo);
     sub?.data.subscription.unsubscribe();
   };
 }
