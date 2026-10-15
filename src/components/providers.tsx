@@ -28,8 +28,7 @@ function useServiceWorker() {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       // Ya había una versión esperando: la app acaba de abrirse, se aplica ya.
       if (reg.waiting && navigator.serviceWorker.controller) aplicar(reg.waiting);
-      reg.addEventListener("updatefound", () => {
-        const nuevo = reg.installing;
+      const vigilar = (nuevo: ServiceWorker | null) => {
         nuevo?.addEventListener("statechange", () => {
           if (nuevo.state !== "installed" || !navigator.serviceWorker.controller) return;
           if (document.visibilityState === "hidden") return aplicar(nuevo);
@@ -39,7 +38,10 @@ function useServiceWorker() {
             duration: 10000,
           });
         });
-      });
+      };
+      // La descarga puede haber empezado antes de llegar aquí (al registrar): también se vigila.
+      vigilar(reg.installing);
+      reg.addEventListener("updatefound", () => vigilar(reg.installing));
       // Al salir de la app se aplica lo que haya pendiente; al volver se buscan versiones nuevas.
       const alCambiar = () => {
         if (document.visibilityState === "hidden") aplicar(reg.waiting);
