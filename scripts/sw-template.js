@@ -4,7 +4,9 @@ const PRECACHE = __PRECACHE__;
 const IMAGENES = __IMAGENES__;
 const CACHE_APP = `app-${VERSION}`;
 const CACHE_IMG = "imagenes-v1";
-const CACHE_RUNTIME = "runtime-v1";
+// La caché de ejecución va por versión: cada despliegue empieza limpio (antes era fija y
+// servía para siempre las pantallas de versiones antiguas al navegar dentro de la app).
+const CACHE_RUNTIME = `runtime-${VERSION}`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -23,7 +25,9 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const claves = await caches.keys();
       await Promise.all(
-        claves.filter((k) => k.startsWith("app-") && k !== CACHE_APP).map((k) => caches.delete(k)),
+        claves
+          .filter((k) => (k.startsWith("app-") && k !== CACHE_APP) || (k.startsWith("runtime-") && k !== CACHE_RUNTIME))
+          .map((k) => caches.delete(k)),
       );
       await self.clients.claim();
     })(),
@@ -83,14 +87,39 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Estáticos versionados de Next (y payloads RSC): caché primero, luego red.
+  // Payloads RSC (.txt): describen cada pantalla al navegar dentro de la app. Red primero
+  // (siempre la versión publicada) y caché de esta versión solo si no hay conexión.
+  if (url.pathname.endsWith(".txt")) {
+    event.respondWith(
+      (async () => {
+        try {
+          const res = await fetch(req);
+          if (res.ok) {
+            const c = await caches.open(CACHE_RUNTIME);
+            c.put(req, res.clone());
+          }
+          return res;
+        } catch {
+          const cache = await caches.open(CACHE_APP);
+          return (
+            (await cache.match(req, { ignoreSearch: true })) ||
+            (await (await caches.open(CACHE_RUNTIME)).match(req, { ignoreSearch: true })) ||
+            new Response("Sin conexión", { status: 503 })
+          );
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Estáticos versionados de Next (el nombre cambia con el contenido): caché primero, luego red.
   event.respondWith(
     (async () => {
-      const hit = (await caches.match(req, { ignoreSearch: url.pathname.endsWith(".txt") })) || null;
+      const hit = (await caches.match(req)) || null;
       if (hit) return hit;
       try {
         const res = await fetch(req);
-        if (res.ok && (url.pathname.startsWith("/_next/") || url.pathname.endsWith(".txt"))) {
+        if (res.ok && url.pathname.startsWith("/_next/")) {
           const c = await caches.open(CACHE_RUNTIME);
           c.put(req, res.clone());
         }

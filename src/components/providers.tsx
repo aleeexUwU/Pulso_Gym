@@ -12,29 +12,48 @@ import { configurarHaptica } from "@/lib/haptics";
 import { conservarAjustesAntiguos } from "@/lib/app/planificacion";
 import { iniciarSyncAutomatica, suscribirSync } from "@/lib/sync/sync";
 
-/** Registra el service worker en producción y avisa cuando hay versión nueva. */
+/**
+ * Registra el service worker en producción y aplica las versiones nuevas solas, sin
+ * cortar a nadie a mitad de una serie: al abrir la app (si ya había una esperando) o
+ * al salir de ella. Mientras está abierta, un aviso permite actualizar al momento.
+ * (Antes solo se aplicaba pulsando el aviso, y en el iPhone la app casi nunca se cierra
+ * del todo: se quedaba la versión antigua indefinidamente.)
+ */
 function useServiceWorker() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     let recargado = false;
+    let quitar = () => {};
+    const aplicar = (sw: ServiceWorker | null | undefined) => sw?.postMessage("SKIP_WAITING");
     navigator.serviceWorker.register("/sw.js").then((reg) => {
+      // Ya había una versión esperando: la app acaba de abrirse, se aplica ya.
+      if (reg.waiting && navigator.serviceWorker.controller) aplicar(reg.waiting);
       reg.addEventListener("updatefound", () => {
         const nuevo = reg.installing;
         nuevo?.addEventListener("statechange", () => {
-          if (nuevo.state === "installed" && navigator.serviceWorker.controller) {
-            toast("Hay una versión nueva", {
-              action: { label: "Actualizar", onClick: () => nuevo.postMessage("SKIP_WAITING") },
-              duration: 15000,
-            });
-          }
+          if (nuevo.state !== "installed" || !navigator.serviceWorker.controller) return;
+          if (document.visibilityState === "hidden") return aplicar(nuevo);
+          toast("Hay una versión nueva", {
+            description: "Se aplicará sola al salir de la app.",
+            action: { label: "Actualizar ya", onClick: () => aplicar(nuevo) },
+            duration: 10000,
+          });
         });
       });
+      // Al salir de la app se aplica lo que haya pendiente; al volver se buscan versiones nuevas.
+      const alCambiar = () => {
+        if (document.visibilityState === "hidden") aplicar(reg.waiting);
+        else void reg.update().catch(() => {});
+      };
+      document.addEventListener("visibilitychange", alCambiar);
+      quitar = () => document.removeEventListener("visibilitychange", alCambiar);
     });
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (recargado) return;
       recargado = true;
       window.location.reload();
     });
+    return () => quitar();
   }, []);
 }
 
